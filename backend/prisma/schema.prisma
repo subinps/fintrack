@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  isVerified Boolean @default(false)
+  verificationToken String?
+  verificationTokenExpiry DateTime?
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  
+  sessions      Session[]
+  accounts      Account[]
+  transactions  Transaction[]
+  snapshots     NetWorthSnapshot[]
+  categories    Category[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique // Store the JWT token itself or a hash
+  device    String?
+  ip        String?
+  lastActive DateTime @default(now())
+  createdAt DateTime @default(now())
+}
+
+model Account {
+  id           Int      @id @default(autoincrement())
+  name         String
+  type         String   // ASSET, LIABILITY, INCOME, EXPENSE, EQUITY
+  // For sub-types like 'Bank', 'Credit Card', 'Category Name', 'Stock', 'Mutual Fund'
+  subType      String?  
+  
+  // Extended fields for specific account types
+  interestRate Float?   // For Debts/Loans
+  dueDate      DateTime? // For Debts/Loans
+  symbol       String?  // For Investments
+  units        Float?   // For Investments
+  
+  lastMarketPrice Decimal? // Store as Decimal for precision
+  lastMarketUpdate DateTime?
+  
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  splits       TransactionSplit[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Transaction {
+  id           Int      @id @default(autoincrement())
+  date         DateTime @default(now())
+  description  String
+  
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  splits       TransactionSplit[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  status       TransactionStatus @default(COMPLETED)
+}
+
+enum TransactionStatus {
+  DRAFT
+  COMPLETED
+}
+
+model TransactionSplit {
+  id            Int         @id @default(autoincrement())
+  amount        BigInt      // Positive for Debit, Negative for Credit (or vice versa, standard is Debit +, Credit -)
+  
+  transactionId Int
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  
+  accountId     Int
+  account       Account     @relation(fields: [accountId], references: [id])
+  
+  units         Decimal?    // Units purchased (positive) or sold (negative)
+}
+
+model MarketPrice {
+  symbol      String   @id
+  price       Decimal
+  lastUpdated DateTime @default(now())
+}
+
+model NetWorthSnapshot {
+  id          Int      @id @default(autoincrement())
+  date        DateTime @default(now())
+  netWorth    Decimal
+  assets      Decimal
+  liabilities Decimal
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+model Category {
+  id     Int    @id @default(autoincrement())
+  name   String
+  type   String // ASSET, LIABILITY, INCOME, EXPENSE, EQUITY
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, name])
+}

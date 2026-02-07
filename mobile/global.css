@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --color-primary: 124 58 237;
+        /* Violet 600 - Darker for better contrast on white */
+        --color-primary-foreground: 255 255 255;
+
+        --color-background: 244 244 245;
+        /* Zinc 100 */
+        --color-surface: 255 255 255;
+        /* White */
+        --color-surface-variant: 228 228 231;
+        /* Zinc 200 */
+
+        --color-on-background: 9 9 11;
+        /* Zinc 950 */
+        --color-on-surface: 24 24 27;
+        /* Zinc 900 */
+        --color-on-surface-variant: 63 63 70;
+        /* Zinc 700 - Much darker for readability */
+
+        --color-outline: 161 161 170;
+        /* Zinc 400 - Visible border */
+        --color-error: 220 38 38;
+        /* Red 600 */
+    }
+
+    .dark {
+        --color-primary: 139 92 246;
+        /* Violet 500 */
+        --color-primary-foreground: 255 255 255;
+
+        --color-background: 2 6 23;
+        /* Slate 950 */
+        --color-surface: 15 23 42;
+        /* Slate 900 */
+        --color-surface-variant: 30 41 59;
+        /* Slate 800 */
+
+        --color-on-background: 248 250 252;
+        /* Slate 50 */
+        --color-on-surface: 241 245 249;
+        /* Slate 100 */
+        --color-on-surface-variant: 148 163 184;
+        /* Slate 400 */
+
+        --color-outline: 51 65 85;
+        /* Slate 700 */
+        --color-error: 239 68 68;
+        /* Red 500 */
+    }
+}
