@@ -306,7 +306,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Prisma](https://www.prisma.io/) - Next-generation ORM
 - [Expo](https://expo.dev/) - React Native framework
 ---
-
-<p align="center">
-  Made with ❤️ by <a href="https://github.com/subinps">SUBIN</a>
-</p>

@@ -97,7 +97,7 @@ export function PrivacyPage() {
                         <section>
                             <h2 className="text-2xl font-semibold text-foreground mb-4">8. Contact Us</h2>
                             <p>
-                                If you have any questions about this privacy policy, please contact us at privacy@fintrack.com.
+                                If you have any questions about this privacy policy, please contact us at mail@subinps.in
                             </p>
                         </section>
 
