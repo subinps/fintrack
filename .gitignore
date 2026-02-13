@@ -34,3 +34,7 @@ yarn-error.log*
 
 # Local
 .gemini
+
+#Keys
+*.keystore
+*.jkss
