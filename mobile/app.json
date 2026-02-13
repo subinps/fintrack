@@ -43,6 +43,8 @@
       "./plugins/withAndroidRemoveBundleCompression",
       "./plugins/withAndroidForceCoreKtx",
       "./plugins/withAndroidPickFirst",
+      "./plugins/withAndroidSplits",
+      "./plugins/withAndroidSigning",
       "expo-router",
       "expo-secure-store",
       "expo-local-authentication",
