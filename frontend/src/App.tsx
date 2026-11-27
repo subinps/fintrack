@@ -75,7 +75,7 @@ function AppContent() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
         <BrowserRouter>
           <AuthProvider>
             <AppContent />

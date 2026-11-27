@@ -215,9 +215,13 @@ export function TransactionsTab({
 
   const transactionsLoading = isFiltered ? allLoading : infiniteLoading;
 
-  const rawTransactions = isFiltered
-    ? (allTransactions || [])
-    : (infiniteData?.pages.flatMap((p: any) => p.data) || []);
+  const rawTransactions = useMemo(
+    () =>
+      isFiltered
+        ? (allTransactions || [])
+        : (infiniteData?.pages.flatMap((p: any) => p.data) || []),
+    [isFiltered, allTransactions, infiniteData]
+  );
 
   const filteredTransactions = useMemo(() => {
     let data = rawTransactions;
@@ -379,7 +383,7 @@ export function TransactionsTab({
         const unitsValue = simpleForm.units ? Math.abs(parseFloat(simpleForm.units)) : undefined;
 
         if (fromIsInvestment && unitsValue) {
-          let avgPrice = fromAccount?.averageBuyPrice;
+          const avgPrice = fromAccount?.averageBuyPrice;
           if (avgPrice !== undefined && avgPrice !== null) {
             const costBasis = Math.round(unitsValue * avgPrice);
             const saleAmount = amount;

@@ -4,19 +4,22 @@ import { Button } from '@/components/ui/button';
 import { Tabs } from '@/components/ui/tabs';
 import {
   ArrowLeftRight,
+  Compass,
   CreditCard,
   Landmark,
-  LayoutGrid,
   LineChart,
   ListTree,
   LogOut,
   Menu,
+  Plus,
   ReceiptText,
+  Search,
   UserRound,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { CommandPalette } from '../components/CommandPalette';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -34,7 +37,7 @@ const navigation = [
   {
     group: 'Position',
     items: [
-      { id: 'overview', label: 'Overview', icon: LayoutGrid, hint: 'Net worth, allocation, momentum' },
+      { id: 'overview', label: 'Overview', icon: Compass, hint: 'Net worth, allocation, momentum' },
       { id: 'income-expense', label: 'Income & Expenses', icon: ArrowLeftRight, hint: 'Cash in against cash out' },
       { id: 'investments', label: 'Investments', icon: LineChart, hint: 'Holdings and market value' },
       { id: 'accounts', label: 'Bank & Cash', icon: Landmark, hint: 'Liquid balances' },
@@ -62,25 +65,18 @@ const navItems = navigation.flatMap((group) => group.items);
 function Brand() {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="flex h-8 w-8 items-center justify-center rounded-control border border-primary/30 bg-primary-soft">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-4 w-4 text-primary"
-          aria-hidden="true"
-        >
-          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+      <div className="relative flex h-9 w-9 items-center justify-center rounded-panel border border-primary/25 bg-primary-soft">
+        <svg viewBox="0 0 24 24" className="h-5 w-5 text-primary" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="8.25" stroke="currentColor" strokeWidth="1.25" opacity="0.5" />
+          <path d="M15.8 8.2 13.2 13.2 8.2 15.8l2.6-5z" fill="currentColor" />
+          <circle cx="12" cy="12" r="1.4" fill="hsl(var(--card))" />
         </svg>
+        <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-chart-3" aria-hidden="true" />
       </div>
-      <div className="leading-none">
-        <span className="text-[15px] font-semibold tracking-[-0.02em] text-foreground">FinTrack</span>
-        <span className="mt-0.5 block font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
-          Personal ledger
+      <div className="flex flex-col gap-0.5 whitespace-nowrap">
+        <span className="block text-[15px] font-semibold leading-[1.15] tracking-[-0.02em] text-foreground">FinTrack</span>
+        <span className="block font-mono text-[9px] uppercase leading-none tracking-[0.18em] text-muted-foreground">
+          Signal compass
         </span>
       </div>
     </div>
@@ -126,6 +122,7 @@ export function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [pendingTransaction, setPendingTransaction] = useState(false);
   const reduceMotion = useReducedMotion();
 
@@ -270,18 +267,46 @@ export function Dashboard() {
               </div>
 
               <div className="ml-auto flex items-center gap-2">
-                <span className="hidden items-center gap-2 rounded-full border border-border bg-card px-2.5 py-1 sm:inline-flex">
-                  <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
-                  <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">Connected</span>
-                </span>
-                <div className="lg:hidden">
+                <button
+                  type="button"
+                  onClick={() => setPaletteOpen(true)}
+                  aria-label="Search pages and actions"
+                  className="group hidden h-9 items-center gap-2 rounded-full border border-border bg-card pl-3 pr-1.5 text-left text-[12px] text-muted-foreground transition-colors duration-150 hover:border-border-strong hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:flex sm:w-52"
+                >
+                  <Search className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span className="truncate">Search workspace</span>
+                  <kbd className="mono ml-auto rounded-sm border border-border bg-surface px-1.5 py-0.5 text-[10px] text-muted-foreground group-hover:border-border-strong">
+                    ⌘K
+                  </kbd>
+                </button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="sm:hidden"
+                  aria-label="Search pages and actions"
+                  onClick={() => setPaletteOpen(true)}
+                >
+                  <Search className="h-[18px] w-[18px]" />
+                </Button>
+                <Button
+                  size="sm"
+                  className="hidden gap-1.5 md:inline-flex"
+                  onClick={() => {
+                    setPendingTransaction(true);
+                    setActiveTab('transactions');
+                  }}
+                >
+                  <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                  New entry
+                </Button>
+                <div className="hidden sm:block lg:hidden">
                   <ThemeToggle />
                 </div>
-                <div className="flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-1 lg:pr-3">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-soft font-mono text-[11px] font-semibold uppercase text-primary-strong">
+                <div className="hidden items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-1 sm:flex lg:pr-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-soft font-mono text-[10px] font-semibold uppercase leading-none text-primary-strong">
                     {initials || 'FT'}
                   </span>
-                  <span className="hidden max-w-[10rem] truncate text-[12px] font-medium text-foreground lg:block">
+                  <span className="hidden max-w-[10rem] truncate text-[12px] font-medium leading-none text-foreground lg:block">
                     {user?.name || user?.email}
                   </span>
                   <Button
@@ -332,6 +357,16 @@ export function Dashboard() {
           </footer>
         </div>
       </div>
+
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        onNavigate={handleNavigate}
+        onNewTransaction={() => {
+          setPendingTransaction(true);
+          setActiveTab('transactions');
+        }}
+      />
 
       <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
         <AlertDialogContent>

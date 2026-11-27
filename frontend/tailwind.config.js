@@ -27,7 +27,10 @@ export default {
                 '2xs': ['0.6875rem', { lineHeight: '1rem', letterSpacing: '0.08em' }],
                 micro: ['0.625rem', { lineHeight: '0.875rem', letterSpacing: '0.12em' }],
                 display: ['clamp(2rem, 1.2rem + 3.2vw, 3.5rem)', { lineHeight: '1.02', letterSpacing: '-0.035em', fontWeight: '600' }],
-                'display-sm': ['clamp(1.5rem, 1.1rem + 1.4vw, 2rem)', { lineHeight: '1.1', letterSpacing: '-0.03em', fontWeight: '600' }]
+                'display-sm': ['clamp(1.5rem, 1.1rem + 1.4vw, 2rem)', { lineHeight: '1.1', letterSpacing: '-0.03em', fontWeight: '600' }],
+                hero: ['clamp(2.4rem, 1.7rem + 2.6vw, 3.6rem)', { lineHeight: '0.98', letterSpacing: '-0.045em', fontWeight: '600' }],
+                stat: ['clamp(1.6rem, 1.25rem + 1.4vw, 2.1rem)', { lineHeight: '1.05', letterSpacing: '-0.035em', fontWeight: '600' }],
+                headline: ['clamp(1.55rem, 1.3rem + 1vw, 2.05rem)', { lineHeight: '1.12', letterSpacing: '-0.03em', fontWeight: '600' }]
             },
             colors: {
                 border: {
@@ -130,8 +133,8 @@ export default {
                     '100%': { transform: 'scale(1)', opacity: '1' }
                 },
                 'rise-in': {
-                    '0%': { transform: 'translateY(6px)', opacity: '0' },
-                    '100%': { transform: 'translateY(0)', opacity: '1' }
+                    '0%': { opacity: '0' },
+                    '100%': { opacity: '1' }
                 },
                 shimmer: {
                     from: { backgroundPosition: '200% 0' },

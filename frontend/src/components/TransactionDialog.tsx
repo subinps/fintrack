@@ -262,7 +262,7 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSuccess }
                 const unitsValue = simpleForm.units ? Math.abs(parseFloat(simpleForm.units)) : undefined;
 
                 if (fromIsInvestment && unitsValue) {
-                    let avgPrice = fromAccount?.averageBuyPrice;
+                    const avgPrice = fromAccount?.averageBuyPrice;
 
                     if (avgPrice !== undefined && avgPrice !== null) {
                         const costBasis = Math.round(unitsValue * avgPrice);

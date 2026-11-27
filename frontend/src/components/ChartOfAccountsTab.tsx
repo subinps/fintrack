@@ -112,6 +112,25 @@ function CategoryManager() {
     );
 }
 
+const DEFAULT_CATEGORIES = {
+    'ASSET': [
+        'Savings', 'Current', 'Wallet', 'Cash',
+        'Stock', 'Mutual Fund', 'Crypto', 'ETF', 'Bond', 'Other Investment',
+        'Receivable', 'Property', 'Vehicle', 'Gold', 'Other Asset'
+    ],
+    'LIABILITY': [
+        'Credit Card', 'Loan', 'Mortgage', 'Payable', 'Overdraft', 'Other Liability'
+    ],
+    'INCOME': [
+        'Salary', 'Freelance', 'Business', 'Dividend', 'Interest', 'Rental', 'Refund', 'Gift', 'Bonus', 'Grant', 'Other Income'
+    ],
+    'EXPENSE': [
+        'Food', 'Groceries', 'Rent', 'Utilities', 'Transportation', 'Entertainment', 'Health', 'Shopping', 'Travel',
+        'Education', 'Insurance', 'Tax', 'Donation', 'Subscriptions', 'Personal Care', 'Home', 'Kids', 'Pets', 'Other Expense'
+    ],
+    'EQUITY': ['Opening Balance', 'Capital', 'Retained Earnings'],
+};
+
 export function ChartOfAccountsTab() {
     const { data: accounts, isLoading } = useGetAccounts();
     const addAccount = useAddAccount();
@@ -262,25 +281,6 @@ export function ChartOfAccountsTab() {
             case 'EXPENSE': return <ArrowRightLeft className="h-4 w-4" />;
             default: return <Wallet className="h-4 w-4" />;
         }
-    };
-
-    const DEFAULT_CATEGORIES = {
-        'ASSET': [
-            'Savings', 'Current', 'Wallet', 'Cash',
-            'Stock', 'Mutual Fund', 'Crypto', 'ETF', 'Bond', 'Other Investment',
-            'Receivable', 'Property', 'Vehicle', 'Gold', 'Other Asset'
-        ],
-        'LIABILITY': [
-            'Credit Card', 'Loan', 'Mortgage', 'Payable', 'Overdraft', 'Other Liability'
-        ],
-        'INCOME': [
-            'Salary', 'Freelance', 'Business', 'Dividend', 'Interest', 'Rental', 'Refund', 'Gift', 'Bonus', 'Grant', 'Other Income'
-        ],
-        'EXPENSE': [
-            'Food', 'Groceries', 'Rent', 'Utilities', 'Transportation', 'Entertainment', 'Health', 'Shopping', 'Travel',
-            'Education', 'Insurance', 'Tax', 'Donation', 'Subscriptions', 'Personal Care', 'Home', 'Kids', 'Pets', 'Other Expense'
-        ],
-        'EQUITY': ['Opening Balance', 'Capital', 'Retained Earnings'],
     };
 
     const { data: dynamicCategories } = useGetCategories();

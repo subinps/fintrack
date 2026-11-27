@@ -139,7 +139,7 @@ export function LandingPage() {
             <span className="leading-none">
               <span className="text-[15px] font-semibold tracking-[-0.02em]">FinTrack</span>
               <span className="mt-0.5 hidden font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground sm:block">
-                Personal ledger
+                Signal compass
               </span>
             </span>
           </Link>
