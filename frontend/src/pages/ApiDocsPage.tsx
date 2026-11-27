@@ -19,23 +19,24 @@ export function ApiDocsPage() {
     return (
         <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
             {/* Header */}
-            <header className="fixed top-0 w-full border-b bg-background/80 backdrop-blur-md z-50 supports-[backdrop-filter]:bg-background/60">
-                <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-                    <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/')}>
-                        <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
-                            <BarChart2 className="h-5 w-5 text-primary-foreground" />
-                        </div>
-                        <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
-                            FinTrack
+            <header className="fixed top-0 z-50 w-full border-b border-border bg-background/85 backdrop-blur-md">
+                <div className="container flex h-14 items-center justify-between">
+                    <button type="button" className="flex items-center gap-2.5" onClick={() => navigate('/')}>
+                        <span className="flex h-7 w-7 items-center justify-center rounded-control border border-primary/30 bg-primary-soft">
+                            <BarChart2 className="h-4 w-4 text-primary" />
                         </span>
-                    </div>
-                    <Button variant="ghost" onClick={() => navigate('/')}>
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Home
+                        <span className="text-[15px] font-semibold tracking-[-0.02em]">FinTrack</span>
+                        <span className="ml-1 rounded-full border border-border bg-surface px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+                            API
+                        </span>
+                    </button>
+                    <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+                        <ArrowLeft className="h-4 w-4" /> Back to home
                     </Button>
                 </div>
             </header>
 
-            <div className="container mx-auto px-4 pt-24 pb-12 flex gap-8">
+            <div className="container flex gap-8 pb-12 pt-24">
                 {/* Sidebar Navigation */}
                 <aside className="hidden lg:block w-64 shrink-0 sticky top-24 h-[calc(100vh-8rem)] overflow-y-auto pr-4">
                     <div className="space-y-1">
@@ -61,19 +62,21 @@ export function ApiDocsPage() {
 
                         {/* Introduction */}
                         <section id="intro" className="scroll-mt-24">
-                            <h1 className="text-4xl font-bold mb-4">API Documentation</h1>
-                            <p className="text-xl text-muted-foreground mb-6">
-                                Comprehensive reference for the FinTrack backend API. Manage your financial data programmatically.
+                            <p className="eyebrow mb-3">Reference</p>
+                            <h1 className="mb-3 text-display-sm">API documentation</h1>
+                            <p className="mb-6 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
+                                The same endpoints the dashboard calls. Authenticate with a JWT and manage every account,
+                                transaction and category programmatically.
                             </p>
-                            <Card className="bg-muted/50 border-none">
+                            <Card className="bg-surface">
                                 <CardContent className="p-4">
-                                    <div className="grid gap-2 text-sm font-mono">
-                                        <div className="flex gap-4">
-                                            <span className="text-muted-foreground w-32">Local Base URL:</span>
+                                    <div className="grid gap-2 font-mono text-[12px]">
+                                        <div className="flex flex-wrap gap-2 sm:gap-4">
+                                            <span className="w-32 text-muted-foreground">Local base URL</span>
                                             <span className="text-foreground">http://localhost:3000/api</span>
                                         </div>
-                                        <div className="flex gap-4">
-                                            <span className="text-muted-foreground w-32">Production URL:</span>
+                                        <div className="flex flex-wrap gap-2 sm:gap-4">
+                                            <span className="w-32 text-muted-foreground">Production URL</span>
                                             <span className="text-foreground">https://your-domain.com/api</span>
                                         </div>
                                     </div>
@@ -83,7 +86,7 @@ export function ApiDocsPage() {
 
                         {/* Authentication */}
                         <section id="auth" className="scroll-mt-24">
-                            <h2 className="text-2xl font-bold mb-6 flex items-center">
+                            <h2 className="mb-5 flex items-center gap-2 text-xl font-semibold tracking-[-0.02em]">
                                 <LockIcon className="mr-2 h-6 w-6 text-primary" /> Authentication
                             </h2>
                             <p className="mb-4 text-muted-foreground">
@@ -104,7 +107,7 @@ export function ApiDocsPage() {
   "user": { "id": 1, "name": "John Doe" }
 }`}
                                 />
-                                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 text-sm text-yellow-500">
+                                <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 text-sm text-warning">
                                     <strong>Important:</strong> Include the token in all subsequent requests:
                                     <code className="block mt-2 bg-black/20 p-2 rounded">Authorization: Bearer &lt;token&gt;</code>
                                 </div>
@@ -113,7 +116,7 @@ export function ApiDocsPage() {
 
                         {/* Accounts */}
                         <section id="accounts" className="scroll-mt-24">
-                            <h2 className="text-2xl font-bold mb-6 flex items-center">
+                            <h2 className="mb-5 flex items-center gap-2 text-xl font-semibold tracking-[-0.02em]">
                                 <WalletIcon className="mr-2 h-6 w-6 text-primary" /> Accounts
                             </h2>
                             <div className="space-y-6">
@@ -148,7 +151,7 @@ export function ApiDocsPage() {
 
                         {/* Transactions */}
                         <section id="transactions" className="scroll-mt-24">
-                            <h2 className="text-2xl font-bold mb-6 flex items-center">
+                            <h2 className="mb-5 flex items-center gap-2 text-xl font-semibold tracking-[-0.02em]">
                                 <ArrowLeftRightIcon className="mr-2 h-6 w-6 text-primary" /> Transactions
                             </h2>
                             <p className="mb-4 text-muted-foreground">
@@ -188,7 +191,7 @@ export function ApiDocsPage() {
 
                         {/* Categories */}
                         <section id="categories" className="scroll-mt-24">
-                            <h2 className="text-2xl font-bold mb-6 flex items-center">
+                            <h2 className="mb-5 flex items-center gap-2 text-xl font-semibold tracking-[-0.02em]">
                                 <TagsIcon className="mr-2 h-6 w-6 text-primary" /> Categories
                             </h2>
                             <div className="space-y-6">
@@ -211,7 +214,7 @@ export function ApiDocsPage() {
 
                         {/* Market Prices */}
                         <section id="prices" className="scroll-mt-24">
-                            <h2 className="text-2xl font-bold mb-6 flex items-center">
+                            <h2 className="mb-5 flex items-center gap-2 text-xl font-semibold tracking-[-0.02em]">
                                 <TrendingUpIcon className="mr-2 h-6 w-6 text-primary" /> Market Prices
                             </h2>
                             <div className="space-y-6">
@@ -225,7 +228,7 @@ export function ApiDocsPage() {
 
                         {/* Analytics */}
                         <section id="analytics" className="scroll-mt-24">
-                            <h2 className="text-2xl font-bold mb-6 flex items-center">
+                            <h2 className="mb-5 flex items-center gap-2 text-xl font-semibold tracking-[-0.02em]">
                                 <PieChartIcon className="mr-2 h-6 w-6 text-primary" /> Analytics
                             </h2>
                             <div className="space-y-6">
@@ -239,21 +242,21 @@ export function ApiDocsPage() {
 
                         {/* Integration Guide */}
                         <section id="integration" className="scroll-mt-24">
-                            <h2 className="text-2xl font-bold mb-6 flex items-center">
+                            <h2 className="mb-5 flex items-center gap-2 text-xl font-semibold tracking-[-0.02em]">
                                 <WorkflowIcon className="mr-2 h-6 w-6 text-primary" /> n8n Integration
                             </h2>
-                            <Card className="bg-slate-950 border-slate-800">
+                            <Card className="code-block overflow-hidden">
                                 <CardContent className="p-6">
-                                    <h3 className="font-bold text-lg mb-4 text-slate-200">Automate Expense Tracking</h3>
-                                    <ol className="list-decimal list-inside space-y-4 text-slate-400">
+                                    <h3 className="mb-4 text-base font-semibold text-[hsl(210_22%_92%)]">Automate expense tracking</h3>
+                                    <ol className="list-decimal list-inside space-y-3 text-[13px] leading-relaxed text-[hsl(216_13%_70%)]">
                                         <li>
-                                            <strong className="text-slate-200">Get Token:</strong> Use the Login endpoint to get a long-lived token.
+                                            <strong className="text-[hsl(210_22%_92%)]">Get a token:</strong> call the login endpoint and keep the access token.
                                         </li>
                                         <li>
-                                            <strong className="text-slate-200">Get IDs:</strong> Use <code>GET /accounts</code> to find your Bank ID and Category IDs.
+                                            <strong className="text-[hsl(210_22%_92%)]">Find IDs:</strong> <code className="text-[hsl(222_89%_75%)]">GET /accounts</code> returns your account and category IDs.
                                         </li>
                                         <li>
-                                            <strong className="text-slate-200">Configure n8n HTTP Request:</strong>
+                                            <strong className="text-[hsl(210_22%_92%)]">Configure the n8n HTTP request:</strong>
                                             <ul className="list-disc list-inside ml-6 mt-2 space-y-1">
                                                 <li>Method: <code>POST</code></li>
                                                 <li>URL: <code>https://your-app.com/api/transactions</code></li>
@@ -276,28 +279,30 @@ export function ApiDocsPage() {
 
 function NavItem({ children, active, onClick }: { children: React.ReactNode, active?: boolean, onClick?: () => void }) {
     return (
-        <div
+        <button
+            type="button"
             onClick={onClick}
-            className={`px-2 py-1.5 rounded-md text-sm cursor-pointer transition-colors ${active
-                ? 'bg-primary/10 text-primary font-medium'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            aria-current={active ? 'location' : undefined}
+            className={`flex min-h-8 w-full items-center rounded-control px-2 py-1.5 text-left text-[13px] transition-colors ${active
+                ? 'bg-primary-soft text-primary font-medium'
+                : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                 }`}
         >
             {children}
-        </div>
+        </button>
     );
 }
 
 function EndpointBlock({ method, path, description, payload, response }: { method: string, path: string, description: string, payload?: string, response?: string }) {
-    const color = method === 'GET' ? 'text-blue-400 bg-blue-500/10' :
-        method === 'POST' ? 'text-green-400 bg-green-500/10' :
-            method === 'DELETE' ? 'text-red-400 bg-red-500/10' : 'text-yellow-400 bg-yellow-500/10';
+    const color = method === 'GET' ? 'border-primary/25 bg-primary-soft text-primary' :
+        method === 'POST' ? 'border-success/25 bg-success/10 text-success' :
+            method === 'DELETE' ? 'border-destructive/25 bg-destructive/10 text-destructive' : 'border-warning/25 bg-warning/10 text-warning';
 
     return (
-        <Card className="bg-background border-border overflow-hidden">
+        <Card className="overflow-hidden">
             <div className="p-4 border-b bg-muted/30 flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                    <span className={`px-2.5 py-0.5 rounded text-xs font-bold font-mono ${color}`}>{method}</span>
+                    <span className={`rounded-control border px-2 py-0.5 font-mono text-[10px] font-medium tracking-[0.08em] ${color}`}>{method}</span>
                     <code className="text-sm font-mono font-semibold">{path}</code>
                 </div>
             </div>
@@ -307,7 +312,7 @@ function EndpointBlock({ method, path, description, payload, response }: { metho
                 {payload && (
                     <div>
                         <div className="text-xs font-semibold mb-2 text-muted-foreground uppercase tracking-wider">Payload</div>
-                        <pre className="bg-slate-950 text-slate-300 p-3 rounded-lg text-xs font-mono overflow-x-auto border border-slate-800">
+                        <pre className="code-block overflow-x-auto p-3 text-[11.5px] leading-relaxed">
                             {payload}
                         </pre>
                     </div>
@@ -316,7 +321,7 @@ function EndpointBlock({ method, path, description, payload, response }: { metho
                 {response && (
                     <div>
                         <div className="text-xs font-semibold mb-2 text-muted-foreground uppercase tracking-wider">Response</div>
-                        <pre className="bg-slate-950 text-slate-300 p-3 rounded-lg text-xs font-mono overflow-x-auto border border-slate-800">
+                        <pre className="code-block overflow-x-auto p-3 text-[11.5px] leading-relaxed">
                             {response}
                         </pre>
                     </div>

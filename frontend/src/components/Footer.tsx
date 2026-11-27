@@ -1,69 +1,58 @@
 import { Link } from 'react-router-dom';
-import { BarChart2, Github, Twitter, Linkedin } from 'lucide-react';
+import { BarChart3, Github } from 'lucide-react';
 
 export function Footer() {
     return (
-        <footer className="bg-background border-t">
-            <div className="container mx-auto px-4 py-12">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-                    <div className="col-span-1 md:col-span-2">
-                        <div className="flex items-center space-x-2 mb-4">
-                            <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center">
-                                <BarChart2 className="h-5 w-5 text-primary-foreground" />
-                            </div>
-                            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
-                                FinTrack
+        <footer className="bg-background">
+            <div className="container py-12">
+                <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
+                    <div className="md:col-span-2">
+                        <div className="flex items-center gap-2.5">
+                            <span className="flex h-7 w-7 items-center justify-center rounded-control border border-primary/30 bg-primary-soft">
+                                <BarChart3 className="h-4 w-4 text-primary" />
                             </span>
+                            <span className="text-[15px] font-semibold tracking-[-0.02em]">FinTrack</span>
                         </div>
-                        <p className="text-muted-foreground max-w-sm mb-6">
-                            Empowering you to take control of your financial future with smart tracking and beautiful analytics.
+                        <p className="mt-4 max-w-sm text-[13px] leading-relaxed text-muted-foreground">
+                            An open-source personal ledger. Net worth, cash flow, investments and debt —
+                            kept in a database you own.
                         </p>
-                        <div className="flex space-x-4">
-                            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                                <Twitter className="h-5 w-5" />
-                            </a>
-                            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                                <Github className="h-5 w-5" />
-                            </a>
-                            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                                <Linkedin className="h-5 w-5" />
-                            </a>
-                        </div>
+                        <a
+                            href="https://github.com/subinps/fintrack"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-5 inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:border-foreground/25 hover:text-foreground"
+                        >
+                            <Github className="h-3 w-3" />
+                            github.com/subinps/fintrack
+                        </a>
                     </div>
 
                     <div>
-                        <h3 className="font-semibold mb-4 text-foreground">Product</h3>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                            <li><a href="/#features" className="hover:text-primary transition-colors">Features</a></li>
-                            <li><Link to="/api-docs" className="hover:text-primary transition-colors">API Docs</Link></li>
-                            <li><a href="https://github.com/subinps/fintrack" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors flex items-center gap-1">
-                                <Github className="h-3 w-3" /> GitHub
-                            </a></li>
+                        <h3 className="eyebrow mb-4">Product</h3>
+                        <ul className="space-y-2.5 text-[13px] text-muted-foreground">
+                            <li><a href="/#features" className="transition-colors hover:text-foreground">Features</a></li>
+                            <li><Link to="/api-docs" className="transition-colors hover:text-foreground">API docs</Link></li>
+                            <li><Link to="/login" className="transition-colors hover:text-foreground">Sign in</Link></li>
                         </ul>
                     </div>
 
                     <div>
-                        <h3 className="font-semibold mb-4 text-foreground">Legal</h3>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                            <li>
-                                <Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
-                            </li>
-                            <li>
-                                <Link to="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
-                            </li>
-                            <li><a href="#" className="hover:text-primary transition-colors">Cookie Policy</a></li>
+                        <h3 className="eyebrow mb-4">Legal</h3>
+                        <ul className="space-y-2.5 text-[13px] text-muted-foreground">
+                            <li><Link to="/privacy" className="transition-colors hover:text-foreground">Privacy policy</Link></li>
+                            <li><Link to="/terms" className="transition-colors hover:text-foreground">Terms of service</Link></li>
                         </ul>
                     </div>
                 </div>
 
-                <div className="pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p className="text-sm text-muted-foreground">
-                        © {new Date().getFullYear()} FinTrack. All rights reserved.
+                <div className="mt-10 flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                        © {new Date().getFullYear()} FinTrack · MIT licensed
                     </p>
-                    <div className="flex items-center space-x-6 text-sm text-muted-foreground">
-                        <Link to="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
-                        <Link to="/terms" className="hover:text-primary transition-colors">Terms</Link>
-                        <a href="#" className="hover:text-primary transition-colors">Contact</a>
+                    <div className="flex items-center gap-5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                        <Link to="/privacy" className="transition-colors hover:text-foreground">Privacy</Link>
+                        <Link to="/terms" className="transition-colors hover:text-foreground">Terms</Link>
                     </div>
                 </div>
             </div>

@@ -36,26 +36,25 @@ export function InteractiveBarChart({
                         onBarClick?.(state.activePayload[0].payload);
                     }
                 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} opacity={0.5} />
+                    <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
                     <XAxis
                         dataKey={xAxisKey}
-                        stroke="#9ca3af"
-                        fontSize={12}
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11, fontFamily: 'JetBrains Mono Variable, monospace' }}
                         tickLine={false}
                         axisLine={false}
                         dy={10}
+                        minTickGap={16}
                     />
                     <YAxis
-                        stroke="#9ca3af"
-                        fontSize={12}
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11, fontFamily: 'JetBrains Mono Variable, monospace' }}
                         tickLine={false}
                         axisLine={false}
                         tickFormatter={formatter}
-                        dx={-10}
+                        width={78}
                     />
                     <Tooltip
                         content={<ChartTooltip formatter={formatter} />}
-                        cursor={{ fill: '#374151', opacity: 0.2 }}
+                        cursor={{ fill: 'hsl(var(--muted-foreground))', opacity: 0.12 }}
                     />
                     {bars.map((bar) => (
                         <Bar

@@ -24,49 +24,49 @@ export function InteractiveAreaChart({
     formatter,
     name = "Value"
 }: InteractiveAreaChartProps) {
-    const gradientId = `color-${dataKey}`;
+    const gradientId = `fill-${dataKey}`;
 
     return (
         <div style={{ width: '100%', height }}>
             <ResponsiveContainer>
-                <AreaChart data={data}>
+                <AreaChart data={data} margin={{ top: 8, right: 28, bottom: 0, left: 0 }}>
                     <defs>
                         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-                            <stop offset="95%" stopColor={color} stopOpacity={0} />
+                            <stop offset="0%" stopColor={color} stopOpacity={0.28} />
+                            <stop offset="100%" stopColor={color} stopOpacity={0} />
                         </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} opacity={0.5} />
+                    <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
                     <XAxis
                         dataKey="date"
                         tickFormatter={(date) => format(new Date(date), 'MMM d')}
-                        stroke="#9ca3af"
-                        fontSize={12}
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11, fontFamily: 'JetBrains Mono Variable, monospace' }}
                         tickLine={false}
                         axisLine={false}
-                        dy={10}
+                        dy={8}
+                        minTickGap={24}
                     />
                     <YAxis
-                        stroke="#9ca3af"
-                        fontSize={12}
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11, fontFamily: 'JetBrains Mono Variable, monospace' }}
                         tickLine={false}
                         axisLine={false}
                         tickFormatter={formatter}
-                        dx={-10}
+                        width={58}
                     />
                     <Tooltip
                         content={<ChartTooltip formatter={formatter} />}
-                        cursor={{ stroke: '#374151', strokeWidth: 1, strokeDasharray: '3 3' }}
+                        cursor={{ stroke: 'hsl(var(--border-strong))', strokeWidth: 1, strokeDasharray: '3 3' }}
                     />
                     <Area
                         type="monotone"
                         dataKey={dataKey}
                         name={name}
                         stroke={color}
-                        strokeWidth={3}
+                        strokeWidth={2}
                         fillOpacity={1}
                         fill={`url(#${gradientId})`}
-                        activeDot={{ r: 6, strokeWidth: 0, fill: '#fff' }}
+                        activeDot={{ r: 4, strokeWidth: 2, stroke: 'hsl(var(--card))', fill: color }}
+                        dot={false}
                     />
                 </AreaChart>
             </ResponsiveContainer>

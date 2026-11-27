@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { User, Mail, Shield, Trash2, Smartphone, Laptop, Globe, Download, Upload } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -173,19 +173,18 @@ export function ProfileTab() {
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
       {/* Profile Header */}
-      <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between bg-card/50 p-6 rounded-2xl border border-border/50 backdrop-blur-sm">
+      <div className="flex flex-col items-start justify-between gap-6 rounded-panel border border-border bg-card p-5 shadow-panel sm:flex-row sm:items-center">
         <div className="flex items-center gap-5">
-          <Avatar className="h-24 w-24 border-4 border-background shadow-xl">
-            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`} />
-            <AvatarFallback className="text-2xl">{user.name?.charAt(0) || 'U'}</AvatarFallback>
+          <Avatar className="h-16 w-16 border border-border bg-primary-soft shadow-xs">
+            <AvatarFallback className="bg-primary-soft font-mono text-lg font-semibold text-primary-strong">{user.name?.charAt(0) || 'U'}</AvatarFallback>
           </Avatar>
           <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <h2 className="text-3xl font-bold tracking-tight">{user.name || 'User'}</h2>
+              <h2 className="text-xl font-semibold tracking-[-0.02em]">{user.name || 'User'}</h2>
               <Dialog open={editNameOpen} onOpenChange={setEditNameOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-primary/10" onClick={() => setEditName(user.name || '')}>
-                    <User className="h-4 w-4 text-primary" />
+                  <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-primary" onClick={() => setEditName(user.name || '')} aria-label="Edit display name">
+                    <User className="h-3.5 w-3.5" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
@@ -212,7 +211,7 @@ export function ProfileTab() {
               {user.email}
             </div>
             <div className="flex items-center gap-2 pt-1">
-              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 px-2 py-0.5">
+              <Badge variant="outline" className="bg-success/10 text-success border-success/30 px-2 py-0.5">
                 Active Account
               </Badge>
               <span className="text-xs text-muted-foreground">Joined {new Date().toLocaleDateString()}</span>
@@ -282,7 +281,7 @@ export function ProfileTab() {
                     <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Current Device</h4>
                     <div className="flex items-center justify-between p-4 rounded-xl bg-primary/5 border border-primary/20 shadow-sm">
                       <div className="flex items-center gap-4">
-                        <div className="p-3 bg-primary/10 rounded-full text-primary">
+                        <div className="p-3 bg-primary/10 rounded-full text-primary-strong">
                           {currentSession.device?.toLowerCase().includes('mobile') ? (
                             <Smartphone className="h-6 w-6" />
                           ) : (
@@ -298,7 +297,7 @@ export function ProfileTab() {
                             <Globe className="h-3 w-3" />
                             <span>{currentSession.ip || 'Unknown IP'}</span>
                             <span>•</span>
-                            <span className="text-emerald-500 font-medium">Active Now</span>
+                            <span className="text-success font-medium">Active Now</span>
                           </div>
                         </div>
                       </div>

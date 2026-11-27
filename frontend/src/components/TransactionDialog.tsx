@@ -41,7 +41,7 @@ function CreateAccountDialog({ open, onOpenChange }: { open: boolean; onOpenChan
         ...(accounts
             ?.filter(a => a.type === type)
             .map(a => a.subType)
-            .filter(Boolean) as string[])
+            .filter(Boolean) as string[] || [])
     ]));
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -512,8 +512,8 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSuccess }
                             </div>
 
                             {showSimpleUnitsInput && (
-                                <div className="space-y-2 bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
-                                    <Label className="text-blue-400">Investment Units (Purchased/Sold)</Label>
+                                <div className="space-y-2 bg-primary/10 p-4 rounded-lg border border-primary/20">
+                                    <Label className="text-primary">Investment Units (Purchased/Sold)</Label>
                                     <Input
                                         type="number"
                                         step="0.0001"

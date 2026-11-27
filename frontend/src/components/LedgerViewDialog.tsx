@@ -389,7 +389,7 @@ export function LedgerViewDialog({ accountId, accountName, open, onOpenChange, o
                                             <TableCell className="text-right font-mono text-destructive">
                                                 {row.debit ? `₹${row.debit}` : ''}
                                             </TableCell>
-                                            <TableCell className="text-right font-mono text-green-500">
+                                            <TableCell className="text-right font-mono text-success">
                                                 {row.credit ? `₹${row.credit}` : ''}
                                             </TableCell>
                                             <TableCell className="text-right font-mono font-bold">

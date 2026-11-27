@@ -141,16 +141,17 @@ export function BankAccountsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Bank Accounts</h1>
-          <p className="text-muted-foreground">Manage your bank accounts and cash balances</p>
+          <p className="eyebrow mb-2.5">Liquidity</p>
+          <h1 className="text-display-sm">Bank &amp; cash</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">Every liquid account, balance and card, in one place.</p>
         </div>
         <Dialog open={open} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90 text-white">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Account
+            <Button size="sm">
+              <Plus className="h-4 w-4" />
+              Add account
             </Button>
           </DialogTrigger>
           <DialogContent>

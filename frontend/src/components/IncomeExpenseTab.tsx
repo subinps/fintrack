@@ -161,28 +161,28 @@ export function IncomeExpenseTab() {
                     <Card className="glass-card border-0">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">Total Income</CardTitle>
-                            <TrendingUp className="h-4 w-4 text-emerald-500" />
+                            <TrendingUp className="h-4 w-4 text-success" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-emerald-500">{formatCurrency(totalIncome)}</div>
+                            <div className="text-2xl font-bold text-success">{formatCurrency(totalIncome)}</div>
                         </CardContent>
                     </Card>
                     <Card className="glass-card border-0">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">Total Expenses</CardTitle>
-                            <TrendingDown className="h-4 w-4 text-rose-500" />
+                            <TrendingDown className="h-4 w-4 text-destructive" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-rose-500">{formatCurrency(totalExpense)}</div>
+                            <div className="text-2xl font-bold text-destructive">{formatCurrency(totalExpense)}</div>
                         </CardContent>
                     </Card>
                     <Card className="glass-card border-0">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">Net Savings</CardTitle>
-                            <DollarSign className="h-4 w-4 text-blue-500" />
+                            <DollarSign className="h-4 w-4 text-primary" />
                         </CardHeader>
                         <CardContent>
-                            <div className={`text-2xl font-bold ${netSavings >= 0 ? 'text-blue-500' : 'text-orange-500'}`}>
+                            <div className={`text-2xl font-bold ${netSavings >= 0 ? 'text-primary' : 'text-warning'}`}>
                                 {formatCurrency(netSavings)}
                             </div>
                         </CardContent>
@@ -214,8 +214,8 @@ export function IncomeExpenseTab() {
                         <InteractiveBarChart
                             data={chartData}
                             bars={[
-                                { key: 'income', name: 'Income', color: '#10b981' },
-                                { key: 'expense', name: 'Expenses', color: '#f43f5e' }
+                                { key: 'income', name: 'Income', color: 'hsl(var(--success))' },
+                                { key: 'expense', name: 'Expenses', color: 'hsl(var(--destructive))' }
                             ]}
                             formatter={formatCurrency}
                             onBarClick={handleMonthClick}
@@ -291,7 +291,7 @@ export function IncomeExpenseTab() {
                                 return (
                                     <div
                                         key={t.id}
-                                        className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-background/40 hover:bg-background/60 hover:border-primary/20 transition-all duration-300 cursor-pointer group"
+                                        className="group flex cursor-pointer items-center justify-between gap-3 rounded-control border border-border bg-card px-4 py-3 transition-colors hover:bg-surface"
                                         onClick={() => {
                                             setEditingTransaction(t);
                                             setTransactionDialogOpen(true);
@@ -306,7 +306,7 @@ export function IncomeExpenseTab() {
                                                 <p className="text-sm text-muted-foreground">{format(new Date(t.date), 'dd MMM yyyy')}</p>
                                             </div>
                                         </div>
-                                        <div className={`font-bold ${selectedType === 'income' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                        <div className={`font-bold ${selectedType === 'income' ? 'text-success' : 'text-destructive'}`}>
                                             {formatCurrency(amount / 100)}
                                         </div>
                                     </div>

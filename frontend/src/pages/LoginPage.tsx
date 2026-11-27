@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
@@ -8,35 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { BarChart2, Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
+import { BarChart3, Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, ShieldCheck, Server, Activity } from 'lucide-react';
 
-// Floating orb component for animated background
-function FloatingOrb({
-    className,
-    delay = 0,
-    duration = 20
-}: {
-    className: string;
-    delay?: number;
-    duration?: number;
-}) {
-    return (
-        <motion.div
-            className={`absolute rounded-full blur-3xl opacity-30 ${className}`}
-            animate={{
-                x: [0, 30, -20, 10, 0],
-                y: [0, -40, 20, -10, 0],
-                scale: [1, 1.1, 0.9, 1.05, 1],
-            }}
-            transition={{
-                duration,
-                delay,
-                repeat: Infinity,
-                ease: "easeInOut",
-            }}
-        />
-    );
-}
+const guarantees = [
+  { icon: Server, label: 'Runs on your hardware', detail: 'Docker image or a Node process with Postgres or SQLite.' },
+  { icon: ShieldCheck, label: 'No third-party analytics', detail: 'The app talks to your API and the price provider you configure.' },
+  { icon: Activity, label: 'Readable state', detail: 'Every figure is derived from posted ledger entries, not typed twice.' },
+];
 
 export function LoginPage() {
     const [isLogin, setIsLogin] = useState(true);
@@ -49,19 +27,20 @@ export function LoginPage() {
     const [shake, setShake] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
+    const reduceMotion = useReducedMotion();
 
     const handleResendVerification = async () => {
         if (!email) {
-            toast.error('Please enter your email address first');
+            toast.error('Enter your email address first');
             return;
         }
         setLoading(true);
         try {
             await api.post('/auth/resend-verification', { email });
-            toast.success('Verification email sent! Please check your inbox.');
+            toast.success('Verification email sent. Check your inbox.');
             setShowResendVerification(false);
         } catch (error: any) {
-            const errorMessage = error.response?.data?.error || 'Failed to send verification email';
+            const errorMessage = error.response?.data?.error || 'Could not send the verification email';
             toast.error(errorMessage);
         } finally {
             setLoading(false);
@@ -86,16 +65,15 @@ export function LoginPage() {
 
             if (isLogin) {
                 login(res.data.accessToken, res.data.refreshToken, res.data.user);
-                toast.success('Logged in successfully');
+                toast.success('Signed in');
             } else {
                 navigate('/verify-email');
             }
         } catch (error: any) {
-            const errorMessage = error.response?.data?.error || 'An error occurred';
+            const errorMessage = error.response?.data?.error || 'Something went wrong. Try again.';
             triggerShake();
 
-            if (errorMessage.toLowerCase().includes('verify') ||
-                error.response?.status === 403) {
+            if (errorMessage.toLowerCase().includes('verify') || error.response?.status === 403) {
                 setShowResendVerification(true);
             }
 
@@ -105,289 +83,221 @@ export function LoginPage() {
         }
     };
 
-    // Animation variants
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1,
-                delayChildren: 0.2,
-            },
-        },
-    };
-
-    const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: {
-            opacity: 1,
-            y: 0,
-            transition: { duration: 0.5, ease: "easeOut" as const },
-        },
-    };
-
-    const shakeVariants = {
-        shake: {
-            x: [-10, 10, -10, 10, 0],
-            transition: { duration: 0.4 },
-        },
-    };
-
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
-            {/* Animated Background Orbs */}
-            <div className="absolute inset-0 overflow-hidden">
-                <FloatingOrb
-                    className="w-96 h-96 bg-primary/40 -top-20 -left-20"
-                    duration={25}
-                    delay={0}
-                />
-                <FloatingOrb
-                    className="w-80 h-80 bg-blue-500/30 top-1/3 -right-20"
-                    duration={30}
-                    delay={2}
-                />
-                <FloatingOrb
-                    className="w-72 h-72 bg-violet-500/30 bottom-0 left-1/4"
-                    duration={22}
-                    delay={4}
-                />
-                <FloatingOrb
-                    className="w-64 h-64 bg-pink-500/20 -bottom-20 right-1/4"
-                    duration={28}
-                    delay={1}
-                />
-            </div>
+        <div className="min-h-screen bg-background lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
+            {/* Context panel */}
+            <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-border bg-card p-10 lg:flex xl:p-14">
+                <div className="grid-backdrop pointer-events-none absolute inset-0 opacity-70" aria-hidden="true" />
+                <div className="relative">
+                    <Link to="/" className="inline-flex items-center gap-2.5">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-control border border-primary/30 bg-primary-soft">
+                            <BarChart3 className="h-4 w-4 text-primary" />
+                        </span>
+                        <span className="leading-none">
+                            <span className="block text-[15px] font-semibold tracking-[-0.02em]">FinTrack</span>
+                            <span className="mt-0.5 block font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
+                                Personal ledger
+                            </span>
+                        </span>
+                    </Link>
+                </div>
 
-            {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-background/90" />
+                <div className="relative max-w-md">
+                    <p className="eyebrow">System · live</p>
+                    <h2 className="mt-4 text-display-sm">Your books, on your own server.</h2>
+                    <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                        Net worth, cash flow, holdings and debt on one grid — priced from market data,
+                        stored in a database you control.
+                    </p>
 
-            {/* Theme Toggle */}
-            <div className="absolute top-4 right-4 z-20">
-                <ThemeToggle />
-            </div>
-
-            {/* Main Content */}
-            <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={containerVariants}
-                className="relative z-10 w-full max-w-md px-4"
-            >
-                <motion.div
-                    variants={shakeVariants}
-                    animate={shake ? "shake" : ""}
-                >
-                    {/* Glassmorphism Card */}
-                    <div className="relative group">
-                        {/* Card glow effect */}
-                        <div className="absolute -inset-1 bg-gradient-to-r from-primary/50 via-violet-500/50 to-blue-500/50 rounded-3xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-500" />
-
-                        <div className="relative bg-background/60 dark:bg-slate-900/60 backdrop-blur-2xl border border-white/10 dark:border-slate-700/50 rounded-3xl p-8 shadow-2xl">
-                            {/* Header with Logo */}
-                            <motion.div variants={itemVariants} className="text-center mb-8">
-                                <Link to="/" className="inline-flex items-center space-x-3 mb-6 group/logo">
-                                    <div className="h-12 w-12 bg-gradient-to-br from-primary to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary/30 group-hover/logo:shadow-primary/50 transition-shadow">
-                                        <BarChart2 className="h-7 w-7 text-primary-foreground" />
-                                    </div>
-                                    <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-violet-500">
-                                        FinTrack
+                    <ul className="mt-10 divide-y divide-border border-y border-border">
+                        {guarantees.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                                <li key={item.label} className="flex items-start gap-3 py-4">
+                                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-control border border-border bg-surface">
+                                        <Icon className="h-3.5 w-3.5 text-primary" />
                                     </span>
-                                </Link>
+                                    <div>
+                                        <p className="text-[13px] font-medium text-foreground">{item.label}</p>
+                                        <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">{item.detail}</p>
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
 
-                                <AnimatePresence mode="wait">
-                                    <motion.div
-                                        key={isLogin ? 'login' : 'signup'}
-                                        initial={{ opacity: 0, y: -10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: 10 }}
-                                        transition={{ duration: 0.2 }}
-                                    >
-                                        <h1 className="text-2xl font-bold text-foreground mb-2">
-                                            {isLogin ? 'Welcome Back' : 'Create Account'}
-                                        </h1>
-                                        <p className="text-muted-foreground text-sm">
-                                            {isLogin
-                                                ? 'Enter your credentials to access your portfolio'
-                                                : 'Sign up to start tracking your finances'}
-                                        </p>
-                                    </motion.div>
-                                </AnimatePresence>
-                            </motion.div>
+                <p className="relative font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                    MIT licensed · No telemetry · Export everything
+                </p>
+            </aside>
 
-                            <form onSubmit={handleSubmit} className="space-y-5">
-                                <AnimatePresence mode="wait">
-                                    {!isLogin && (
-                                        <motion.div
-                                            key="name-field"
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: 'auto' }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            transition={{ duration: 0.3 }}
-                                            className="overflow-hidden"
-                                        >
-                                            <motion.div variants={itemVariants} className="space-y-2">
-                                                <Label htmlFor="name" className="text-sm font-medium text-foreground/80">Name</Label>
-                                                <div className="relative group/input">
-                                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within/input:text-primary transition-colors" />
-                                                    <Input
-                                                        id="name"
-                                                        placeholder="John Doe"
-                                                        value={name}
-                                                        onChange={(e) => setName(e.target.value)}
-                                                        required={!isLogin}
-                                                        className="pl-11 h-12 bg-background/50 dark:bg-slate-800/50 border-white/10 dark:border-slate-700 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all"
-                                                    />
-                                                </div>
-                                            </motion.div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
+            {/* Form column */}
+            <main className="relative flex min-h-screen flex-col">
+                <div className="flex items-center justify-between px-5 py-4 sm:px-8">
+                    <Link to="/" className="flex items-center gap-2.5 lg:invisible">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-control border border-primary/30 bg-primary-soft">
+                            <BarChart3 className="h-3.5 w-3.5 text-primary" />
+                        </span>
+                        <span className="text-[14px] font-semibold tracking-[-0.02em]">FinTrack</span>
+                    </Link>
+                    <div className="ml-auto">
+                        <ThemeToggle />
+                    </div>
+                </div>
 
-                                <motion.div variants={itemVariants} className="space-y-2">
-                                    <Label htmlFor="email" className="text-sm font-medium text-foreground/80">Email</Label>
-                                    <div className="relative group/input">
-                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within/input:text-primary transition-colors" />
+                <div className="flex flex-1 items-center justify-center px-5 pb-12 pt-4 sm:px-8">
+                    <motion.div
+                        className="w-full max-w-[26rem]"
+                        animate={shake && !reduceMotion ? { x: [-8, 8, -6, 6, 0] } : { x: 0 }}
+                        transition={{ duration: 0.35 }}
+                    >
+                        <div className="mb-7">
+                            <p className="eyebrow">{isLogin ? 'Returning session' : 'New ledger'}</p>
+                            <h1 className="mt-3 text-[1.75rem] font-semibold leading-tight tracking-[-0.03em]">
+                                {isLogin ? 'Sign in to FinTrack' : 'Create your account'}
+                            </h1>
+                            <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                                {isLogin
+                                    ? 'Use the email and password for this instance.'
+                                    : 'One account, one ledger. You can export or reset it at any time.'}
+                            </p>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-4" aria-busy={loading}>
+                            {!isLogin && (
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="name" className="text-xs font-medium text-foreground">Name</Label>
+                                    <div className="relative">
+                                        <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                                         <Input
-                                            id="email"
-                                            type="email"
-                                            placeholder="john@example.com"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            required
-                                            className="pl-11 h-12 bg-background/50 dark:bg-slate-800/50 border-white/10 dark:border-slate-700 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all"
+                                            id="name"
+                                            name="name"
+                                            autoComplete="name"
+                                            placeholder="Subin"
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            required={!isLogin}
+                                            className="h-11 pl-10"
                                         />
                                     </div>
-                                </motion.div>
+                                </div>
+                            )}
 
-                                <motion.div variants={itemVariants} className="space-y-2">
-                                    <Label htmlFor="password" className="text-sm font-medium text-foreground/80">Password</Label>
-                                    <div className="relative group/input">
-                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within/input:text-primary transition-colors" />
-                                        <Input
-                                            id="password"
-                                            type={showPassword ? 'text' : 'password'}
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            required
-                                            className="pl-11 pr-11 h-12 bg-background/50 dark:bg-slate-800/50 border-white/10 dark:border-slate-700 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl transition-all"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                                        >
-                                            {showPassword ? (
-                                                <EyeOff className="h-5 w-5" />
-                                            ) : (
-                                                <Eye className="h-5 w-5" />
-                                            )}
-                                        </button>
-                                    </div>
-                                </motion.div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="email" className="text-xs font-medium text-foreground">Email</Label>
+                                <div className="relative">
+                                    <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                                    <Input
+                                        id="email"
+                                        name="email"
+                                        type="email"
+                                        autoComplete="email"
+                                        inputMode="email"
+                                        placeholder="you@example.com"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                        className="h-11 pl-10"
+                                    />
+                                </div>
+                            </div>
 
-                                {/* Resend Verification Email Section */}
-                                <AnimatePresence>
-                                    {showResendVerification && (
-                                        <motion.div
-                                            initial={{ opacity: 0, height: 0 }}
-                                            animate={{ opacity: 1, height: 'auto' }}
-                                            exit={{ opacity: 0, height: 0 }}
-                                            className="overflow-hidden"
-                                        >
-                                            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                                                <p className="text-sm text-amber-600 dark:text-amber-400 mb-3">
-                                                    Email not verified? Click below to resend the verification email.
-                                                </p>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={handleResendVerification}
-                                                    disabled={loading}
-                                                    className="w-full border-amber-500/30 hover:bg-amber-500/10"
-                                                >
-                                                    {loading ? 'Sending...' : 'Resend Verification Email'}
-                                                </Button>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-
-                                {isLogin && (
-                                    <motion.div variants={itemVariants} className="flex justify-end">
+                            <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="password" className="text-xs font-medium text-foreground">Password</Label>
+                                    {isLogin && (
                                         <Link
                                             to="/forgot-password"
-                                            className="text-sm text-primary hover:text-primary/80 hover:underline transition-colors"
+                                            className="text-[11px] font-medium text-primary transition-colors hover:text-primary/80"
                                         >
                                             Forgot password?
                                         </Link>
-                                    </motion.div>
-                                )}
-
-                                <motion.div variants={itemVariants} className="pt-2">
-                                    <Button
-                                        type="submit"
-                                        className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90 shadow-lg shadow-primary/25 hover:shadow-primary/40 rounded-xl transition-all duration-300 group/btn"
-                                        disabled={loading}
+                                    )}
+                                </div>
+                                <div className="relative">
+                                    <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                                    <Input
+                                        id="password"
+                                        name="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        autoComplete={isLogin ? 'current-password' : 'new-password'}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                        className="h-11 pl-10 pr-11"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                        className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-control text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                     >
-                                        {loading ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                                Please wait...
-                                            </>
-                                        ) : (
-                                            <>
-                                                {isLogin ? 'Sign In' : 'Create Account'}
-                                                <ArrowRight className="ml-2 h-5 w-5 group-hover/btn:translate-x-1 transition-transform" />
-                                            </>
-                                        )}
+                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {showResendVerification && (
+                                <div className="rounded-control border border-warning/35 bg-warning/10 p-3">
+                                    <p className="text-[12px] leading-relaxed text-warning">
+                                        This email has not been verified. Send the verification link again.
+                                    </p>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleResendVerification}
+                                        disabled={loading}
+                                        className="mt-2.5 w-full border-warning/40"
+                                    >
+                                        {loading ? 'Sending…' : 'Resend verification email'}
                                     </Button>
-                                </motion.div>
-                            </form>
-
-                            {/* Divider */}
-                            <motion.div variants={itemVariants} className="relative my-8">
-                                <div className="absolute inset-0 flex items-center">
-                                    <div className="w-full border-t border-white/10 dark:border-slate-700" />
                                 </div>
-                                <div className="relative flex justify-center text-xs uppercase">
-                                    <span className="bg-background/60 dark:bg-slate-900/60 px-3 text-muted-foreground">
-                                        or
-                                    </span>
-                                </div>
-                            </motion.div>
+                            )}
 
-                            {/* Toggle Login/Signup */}
-                            <motion.div variants={itemVariants} className="text-center">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsLogin(!isLogin)}
-                                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                                >
-                                    {isLogin
-                                        ? "Don't have an account? "
-                                        : "Already have an account? "}
-                                    <span className="text-primary font-semibold hover:underline">
-                                        {isLogin ? 'Sign up' : 'Sign in'}
-                                    </span>
-                                </button>
-                            </motion.div>
+                            <Button type="submit" className="mt-2 h-11 w-full text-sm" disabled={loading}>
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Please wait…
+                                    </>
+                                ) : (
+                                    <>
+                                        {isLogin ? 'Sign in' : 'Create account'}
+                                        <ArrowRight className="h-4 w-4" />
+                                    </>
+                                )}
+                            </Button>
+                        </form>
+
+                        <div className="mt-6 flex items-center gap-3">
+                            <span className="h-px flex-1 bg-border" />
+                            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">or</span>
+                            <span className="h-px flex-1 bg-border" />
                         </div>
-                    </div>
-                </motion.div>
 
-                {/* Footer text */}
-                <motion.p
-                    variants={itemVariants}
-                    className="text-center text-xs text-muted-foreground mt-8"
-                >
-                    By continuing, you agree to our{' '}
-                    <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link>
-                    {' '}and{' '}
-                    <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
-                </motion.p>
-            </motion.div>
+                        <div className="mt-5 text-center text-[13px] text-muted-foreground">
+                            <button
+                                type="button"
+                                onClick={() => setIsLogin(!isLogin)}
+                                className="rounded-full px-2 py-1 font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                                {isLogin ? "Don't have an account? " : 'Already have an account? '}
+                                <span className="font-semibold text-primary">{isLogin ? 'Create one' : 'Sign in'}</span>
+                            </button>
+                        </div>
+
+                        <p className="mt-8 text-center text-[11px] leading-relaxed text-muted-foreground">
+                            By continuing you agree to the{' '}
+                            <Link to="/terms" className="underline decoration-border underline-offset-2 transition-colors hover:text-foreground">terms of service</Link>
+                            {' '}and{' '}
+                            <Link to="/privacy" className="underline decoration-border underline-offset-2 transition-colors hover:text-foreground">privacy policy</Link>.
+                        </p>
+                    </motion.div>
+                </div>
+            </main>
         </div>
     );
 }

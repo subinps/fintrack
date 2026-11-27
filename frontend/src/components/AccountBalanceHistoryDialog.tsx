@@ -60,29 +60,31 @@ export function AccountBalanceHistoryDialog({ accountId, accountName, isOpen, on
                     ) : history && history.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={history} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                                <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" vertical={false} />
                                 <XAxis
                                     dataKey="date"
                                     tickFormatter={formatDate}
-                                    stroke="#888"
-                                    fontSize={12}
+                                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                                    tickLine={false}
+                                    axisLine={false}
                                     tickMargin={10}
                                 />
                                 <YAxis
                                     tickFormatter={(val) => formatCurrency(val).replace('₹', '')}
-                                    stroke="#888"
-                                    fontSize={12}
-                                    width={60}
+                                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    width={78}
                                 />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }}
+                                    contentStyle={{ backgroundColor: 'hsl(var(--popover))', color: 'hsl(var(--popover-foreground))', border: '1px solid hsl(var(--border))', borderRadius: '6px' }}
                                     labelFormatter={(label) => formatDate(label)}
                                     formatter={(value: number) => [formatCurrency(value), 'Balance']}
                                 />
                                 <Line
                                     type="monotone"
                                     dataKey="balance"
-                                    stroke="#10b981"
+                                    stroke="hsl(var(--success))"
                                     strokeWidth={2}
                                     dot={false}
                                     activeDot={{ r: 6 }}

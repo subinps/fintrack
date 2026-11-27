@@ -22,9 +22,9 @@ export function EmailVerifiedPage() {
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
-                                className="p-3 rounded-full bg-green-500/10"
+                                className="p-3 rounded-full bg-success/10"
                             >
-                                <CheckCircle className="h-12 w-12 text-green-500" />
+                                <CheckCircle className="h-12 w-12 text-success" />
                             </motion.div>
                         </div>
                         <CardTitle className="text-2xl">Email Verified!</CardTitle>

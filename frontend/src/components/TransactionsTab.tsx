@@ -40,7 +40,7 @@ function CreateAccountDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     ...(accounts
       ?.filter(a => a.type === type)
       .map(a => a.subType)
-      .filter(Boolean) as string[])
+      .filter(Boolean) as string[] || [])
   ]));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -154,7 +154,15 @@ function CreateAccountDialog({ open, onOpenChange }: { open: boolean; onOpenChan
   );
 }
 
-export function TransactionsTab({ initialFilterAccountId }: { initialFilterAccountId?: string }) {
+export function TransactionsTab({
+  initialFilterAccountId,
+  initialAddOpen,
+  onInitialAddConsumed,
+}: {
+  initialFilterAccountId?: string;
+  initialAddOpen?: boolean;
+  onInitialAddConsumed?: () => void;
+}) {
   const { data: accounts } = useGetAccounts();
   const addTransaction = useAddTransaction();
   const editTransaction = useEditTransaction();
@@ -181,6 +189,13 @@ export function TransactionsTab({ initialFilterAccountId }: { initialFilterAccou
       setFilterAccountId(initialFilterAccountId);
     }
   }, [initialFilterAccountId]);
+
+  useEffect(() => {
+    if (initialAddOpen) {
+      setOpen(true);
+      onInitialAddConsumed?.();
+    }
+  }, [initialAddOpen, onInitialAddConsumed]);
 
   // Hybrid Query Logic
   const isFiltered = filterAccountId !== 'all' || !!startDate || !!endDate || !!searchQuery || !!minAmount || !!maxAmount || transactionType !== 'all';
@@ -608,45 +623,46 @@ export function TransactionsTab({ initialFilterAccountId }: { initialFilterAccou
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Journal</h1>
-          <p className="text-muted-foreground">Double-entry ledger of all transactions</p>
+          <p className="eyebrow mb-2.5">Ledger</p>
+          <h1 className="text-display-sm">Journal</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">Double-entry ledger of every posted transaction.</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="border-white/10 hover:bg-white/5 rounded-xl" onClick={handleExport}>
-            <Download className="mr-2 h-4 w-4" />
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4" />
             Export
           </Button>
-          <Button variant="outline" className="border-white/10 hover:bg-white/5 rounded-xl" onClick={() => setImportOpen(true)}>
-            <FileInput className="mr-2 h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <FileInput className="h-4 w-4" />
             Import
           </Button>
-          <Button className="bg-primary hover:bg-primary/90 text-white rounded-xl" onClick={() => setOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Transaction
+          <Button size="sm" onClick={() => setOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Add transaction
           </Button>
         </div>
       </div>
 
       {/* Filters */}
-      <Card className="glass-card border-0 rounded-2xl">
+      <Card>
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search..."
+                placeholder="Search description…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 rounded-xl bg-background/50 border-white/10"
+                className="pl-8"
               />
             </div>
             <Select value={filterAccountId} onValueChange={setFilterAccountId}>
-              <SelectTrigger className="rounded-xl bg-background/50 border-white/10">
+              <SelectTrigger>
                 <SelectValue placeholder="Filter by Account" />
               </SelectTrigger>
-              <SelectContent className="rounded-xl">
+              <SelectContent>
                 <SelectItem value="all">All Accounts</SelectItem>
                 {accounts?.map((acc: any) => (
                   <SelectItem key={acc.id} value={acc.id.toString()}>{acc.name}</SelectItem>
@@ -654,23 +670,23 @@ export function TransactionsTab({ initialFilterAccountId }: { initialFilterAccou
               </SelectContent>
             </Select>
             <Select value={transactionType} onValueChange={setTransactionType}>
-              <SelectTrigger className="rounded-xl bg-background/50 border-white/10">
+              <SelectTrigger>
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
-              <SelectContent className="rounded-xl">
+              <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="income">Income</SelectItem>
                 <SelectItem value="expense">Expense</SelectItem>
                 <SelectItem value="transfer">Transfer</SelectItem>
               </SelectContent>
             </Select>
-            <div className="flex gap-2">
-              <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="rounded-xl bg-background/50 border-white/10" />
-              <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="rounded-xl bg-background/50 border-white/10" />
+            <div className="grid grid-cols-2 gap-2 sm:col-span-2 lg:col-span-2">
+              <Input type="date" className="min-w-0" value={startDate} onChange={e => setStartDate(e.target.value)} aria-label="From date" />
+              <Input type="date" className="min-w-0" value={endDate} onChange={e => setEndDate(e.target.value)} aria-label="To date" />
             </div>
-            <div className="flex gap-2">
-              <Input type="number" placeholder="Min ₹" value={minAmount} onChange={e => setMinAmount(e.target.value)} className="rounded-xl bg-background/50 border-white/10" />
-              <Input type="number" placeholder="Max ₹" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} className="rounded-xl bg-background/50 border-white/10" />
+            <div className="grid grid-cols-2 gap-2">
+              <Input type="number" className="min-w-0" placeholder="Min ₹" value={minAmount} onChange={e => setMinAmount(e.target.value)} aria-label="Minimum amount" />
+              <Input type="number" className="min-w-0" placeholder="Max ₹" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} aria-label="Maximum amount" />
             </div>
           </div>
         </CardContent>
@@ -679,11 +695,11 @@ export function TransactionsTab({ initialFilterAccountId }: { initialFilterAccou
       <div className="space-y-6">
         {Object.entries(groupedTransactions).map(([date, txs]) => (
           <div key={date} className="space-y-3">
-            <div className="flex items-center gap-2 px-2">
-              <CalendarIcon className="h-4 w-4 text-primary" />
-              <h3 className="font-semibold text-muted-foreground">{date}</h3>
+            <div className="flex items-center gap-2">
+              <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+              <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{date}</h3>
             </div>
-            <div className="grid gap-3">
+            <div className="divide-y divide-border overflow-hidden rounded-panel border border-border bg-card">
               {txs.map((t: Transaction) => {
                 const totalAmount = t.splits.reduce((sum: number, split: any) => {
                   const amt = Number(split.amount);
@@ -692,38 +708,38 @@ export function TransactionsTab({ initialFilterAccountId }: { initialFilterAccou
 
                 const hasIncome = t.splits.some((s: any) => s.account?.type === 'INCOME');
                 const hasExpense = t.splits.some((s: any) => s.account?.type === 'EXPENSE');
-                let typeColor = 'text-blue-500';
-                if (hasIncome) typeColor = 'text-emerald-500';
-                if (hasExpense) typeColor = 'text-rose-500';
+                let typeColor = 'text-primary';
+                if (hasIncome) typeColor = 'text-success';
+                if (hasExpense) typeColor = 'text-destructive';
 
                 return (
-                  <div key={t.id} className="group flex items-center justify-between p-4 rounded-2xl border border-white/5 bg-background/40 hover:bg-background/60 hover:border-primary/20 transition-all duration-300 shadow-sm hover:shadow-md">
-                    <div className="flex items-center gap-4">
-                      <div className={`p-3 rounded-full bg-background/50 border border-white/10 group-hover:scale-110 transition-transform duration-300`}>
-                        {hasIncome ? <Plus className="h-5 w-5 text-emerald-500" /> : hasExpense ? <ArrowRight className="h-5 w-5 text-rose-500" /> : <ChevronsUpDown className="h-5 w-5 text-blue-500" />}
+                  <div key={t.id} className="group flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-surface">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control border border-border bg-surface">
+                        {hasIncome ? <Plus className="h-4 w-4 text-success" /> : hasExpense ? <ArrowRight className="h-4 w-4 text-destructive" /> : <ChevronsUpDown className="h-4 w-4 text-primary" />}
                       </div>
-                      <div>
-                        <p className="font-medium text-lg">{t.description}</p>
-                        <div className="flex gap-2 text-sm text-muted-foreground mt-1">
+                      <div className="min-w-0">
+                        <p className="line-clamp-2 text-[13px] font-medium text-foreground sm:line-clamp-1">{t.description}</p>
+                        <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
                           {t.splits.slice(0, 2).map((s: any, i: number) => (
-                            <span key={i} className="bg-primary/5 px-2 py-0.5 rounded-md border border-primary/10">
+                            <span key={i} className="rounded-sm border border-border bg-surface px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em]">
                               {s.account?.name}
                             </span>
                           ))}
-                          {t.splits.length > 2 && <span className="text-xs self-center">+{t.splits.length - 2} more</span>}
+                          {t.splits.length > 2 && <span className="self-center font-mono text-[10px]">+{t.splits.length - 2}</span>}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <div className={`text-xl font-bold ${typeColor}`}>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <div className={`tabular text-[14px] font-semibold ${typeColor}`}>
                         {formatCurrency(totalAmount)}
                       </div>
-                      <div className="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                        <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-primary/20" onClick={() => handleEdit(t)}>
-                          <Edit className="h-5 w-5" />
+                      <div className="flex gap-1 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+                        <Button size="icon-sm" variant="ghost" aria-label={`Edit ${t.description}`} onClick={() => handleEdit(t)}>
+                          <Edit className="h-3.5 w-3.5" />
                         </Button>
-                        <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-destructive/20 text-destructive" onClick={() => handleDelete(t.id)}>
-                          <Trash2 className="h-5 w-5" />
+                        <Button size="icon-sm" variant="ghost" aria-label={`Delete ${t.description}`} className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDelete(t.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
@@ -757,22 +773,25 @@ export function TransactionsTab({ initialFilterAccountId }: { initialFilterAccou
 
       <Dialog open={open} onOpenChange={handleDialogClose}>
         <DialogTrigger asChild>
-          <Button className="fixed bottom-8 right-8 h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90 text-white p-0 md:hidden z-50">
-            <Plus className="h-6 w-6" />
+          <Button
+            className="fixed bottom-6 right-4 z-50 h-12 w-12 rounded-full p-0 shadow-lifted md:hidden"
+            aria-label="Add transaction"
+          >
+            <Plus className="h-5 w-5" />
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-2xl rounded-2xl">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingId ? 'Edit Transaction' : 'Add New Transaction'}</DialogTitle>
+            <DialogTitle>{editingId ? 'Edit transaction' : 'Add transaction'}</DialogTitle>
             <DialogDescription>
-              {editingId ? 'Update transaction details' : 'Record a new transaction'}
+              {editingId ? 'Update transaction details' : 'Record a new transaction against your accounts'}
             </DialogDescription>
           </DialogHeader>
 
           <Tabs defaultValue="simple" className="w-full" value={mode} onValueChange={(v) => setMode(v as 'simple' | 'advanced')}>
-            <TabsList className="bg-background/50 backdrop-blur-md border border-white/10 h-12 p-1 rounded-full shadow-sm grid w-full grid-cols-2 mt-4">
-              <TabsTrigger value="simple" className="rounded-full h-full text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all duration-300">Simple Transfer</TabsTrigger>
-              <TabsTrigger value="advanced" className="rounded-full h-full text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all duration-300">Advanced (Splits)</TabsTrigger>
+            <TabsList className="mt-2 grid w-full grid-cols-2">
+              <TabsTrigger value="simple" className="text-xs">Simple transfer</TabsTrigger>
+              <TabsTrigger value="advanced" className="text-xs">Advanced (splits)</TabsTrigger>
             </TabsList>
 
             <form onSubmit={handleSubmit}>
@@ -845,8 +864,8 @@ export function TransactionsTab({ initialFilterAccountId }: { initialFilterAccou
                 </div>
 
                 {showSimpleUnitsInput && (
-                  <div className="space-y-2 bg-blue-500/10 p-4 rounded-xl border border-blue-500/20">
-                    <Label className="text-blue-400">Investment Units (Purchased/Sold)</Label>
+                  <div className="space-y-2 rounded-control border border-primary/20 bg-primary-soft p-4">
+                    <Label className="text-primary">Investment units (bought or sold)</Label>
                     <Input
                       type="number"
                       step="0.0001"

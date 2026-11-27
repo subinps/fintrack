@@ -225,15 +225,16 @@ export function InvestmentsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Investments</h1>
-          <p className="text-muted-foreground">Track your portfolio performance with live market data</p>
+          <p className="eyebrow mb-2.5">Portfolio</p>
+          <h1 className="text-display-sm">Investments</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">Holdings priced from market data, valued against book cost.</p>
         </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
-            className="border-white/10 hover:bg-white/5"
+            size="sm"
             onClick={handleManualRefresh}
             disabled={refreshAllPrices.isPending}
           >
@@ -432,7 +433,7 @@ export function InvestmentsTab() {
                           <span className="truncate" title={investment.name}>{investment.name}</span>
                           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                             {change >= 0 ? (
-                              <TrendingUp className="h-4 w-4 text-chart-2 flex-shrink-0" />
+                              <TrendingUp className="h-4 w-4 shrink-0 text-success" />
                             ) : (
                               <TrendingDown className="h-4 w-4 text-destructive flex-shrink-0" />
                             )}
@@ -483,20 +484,20 @@ export function InvestmentsTab() {
                             <p className="text-lg font-bold">{formatCurrency(current)}</p>
                           </div>
                           <div className="text-right">
-                            <p className={`font-medium ${change >= 0 ? 'text-chart-2' : 'text-destructive'}`}>
+                            <p className={`tabular font-medium ${change >= 0 ? 'text-success' : 'text-destructive'}`}>
                               {change >= 0 ? '+' : ''}{changePercent.toFixed(1)}%
                             </p>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+                        <div className="grid grid-cols-2 gap-2 border-t border-border pt-2">
                           <div>
                             <p className="text-[10px] text-muted-foreground">Invested</p>
                             <p className="font-medium">{formatCurrency(invested)}</p>
                           </div>
                           <div className="text-right">
                             <p className="text-[10px] text-muted-foreground">Gain/Loss</p>
-                            <p className={`font-medium ${change >= 0 ? 'text-chart-2' : 'text-destructive'}`}>
+                            <p className={`tabular font-medium ${change >= 0 ? 'text-success' : 'text-destructive'}`}>
                               {formatCurrency(change)}
                             </p>
                           </div>

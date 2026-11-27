@@ -169,7 +169,7 @@ export function DebtsTab() {
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isReceivable ? (
-                <TrendingUp className="h-5 w-5 text-chart-2" />
+                <TrendingUp className="h-5 w-5 text-success" />
               ) : (
                 <CreditCard className="h-5 w-5 text-destructive" />
               )}
@@ -214,7 +214,7 @@ export function DebtsTab() {
         <CardContent className="space-y-3">
           <div>
             <p className="text-sm text-muted-foreground">{isReceivable ? 'Amount to Receive' : 'Outstanding Amount'}</p>
-            <p className={`text-2xl font-bold ${isReceivable ? 'text-chart-2' : 'text-destructive'}`}>
+            <p className={`tabular text-2xl font-semibold ${isReceivable ? 'text-success' : 'text-destructive'}`}>
               {formatCurrency(balance)}
             </p>
           </div>
@@ -243,16 +243,17 @@ export function DebtsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Debts & Receivables</h1>
-          <p className="text-muted-foreground">Track loans, credit obligations, and money owed to you</p>
+          <p className="eyebrow mb-2.5">Commitments</p>
+          <h1 className="text-display-sm">Debts &amp; receivables</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">Loans and obligations on one side, money owed to you on the other.</p>
         </div>
         <Dialog open={open} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90 text-white">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Entry
+            <Button size="sm">
+              <Plus className="h-4 w-4" />
+              Add entry
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -365,21 +366,21 @@ export function DebtsTab() {
         <Card className="glass-card border-0">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <TrendingUp className="h-4 w-4 text-chart-2" />
+              <TrendingUp className="h-4 w-4 text-success" />
               Total Receivables
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold text-chart-2">{formatCurrency(totalReceivables)}</div>
+            <div className="tabular text-3xl font-semibold tracking-[-0.02em] text-success">{formatCurrency(totalReceivables)}</div>
             <p className="text-sm text-muted-foreground mt-2">{assets.length} receivable accounts</p>
           </CardContent>
         </Card>
       </div>
 
       <Tabs defaultValue="debts" className="space-y-4">
-        <TabsList className="bg-background/50 backdrop-blur-md border border-white/10 h-12 p-1 rounded-full shadow-sm inline-flex">
-          <TabsTrigger value="debts" className="rounded-full px-6 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300">Debts ({liabilities.length})</TabsTrigger>
-          <TabsTrigger value="receivables" className="rounded-full px-6 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300">Receivables ({assets.length})</TabsTrigger>
+        <TabsList>
+          <TabsTrigger value="debts">Debts ({liabilities.length})</TabsTrigger>
+          <TabsTrigger value="receivables">Receivables ({assets.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="debts" className="space-y-4">

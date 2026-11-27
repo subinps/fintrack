@@ -1,5 +1,3 @@
-
-
 interface ChartTooltipProps {
     active?: boolean;
     payload?: any[];
@@ -11,21 +9,23 @@ interface ChartTooltipProps {
 export function ChartTooltip({ active, payload, label, formatter, hideLabel }: ChartTooltipProps) {
     if (active && payload && payload.length) {
         return (
-            <div className="rounded-lg border border-white/10 bg-black/80 p-3 shadow-xl backdrop-blur-md">
+            <div className="min-w-[9rem] rounded-control border border-border bg-popover/95 p-3 shadow-lifted backdrop-blur-md">
                 {!hideLabel && label && (
-                    <p className="mb-2 text-sm font-medium text-muted-foreground">{label}</p>
+                    <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                        {label}
+                    </p>
                 )}
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                     {payload.map((entry: any, index: number) => (
-                        <div key={index} className="flex items-center gap-2 text-sm">
-                            <div
-                                className="h-2 w-2 rounded-full"
+                        <div key={index} className="flex items-center gap-2 text-[12px]">
+                            <span
+                                className="h-2 w-2 shrink-0 rounded-[1px]"
                                 style={{ backgroundColor: entry.color || entry.fill }}
                             />
-                            <span className="text-gray-300">
-                                {entry.name}:
+                            <span className="text-muted-foreground">
+                                {entry.name}
                             </span>
-                            <span className="font-mono font-medium text-white">
+                            <span className="tabular ml-auto font-mono text-[12px] font-medium text-foreground">
                                 {formatter ? formatter(entry.value) : entry.value}
                             </span>
                         </div>

@@ -10,6 +10,18 @@
 
 **The ultimate open-source personal finance tracker.** Manage investments, track expenses, and visualize your net worth with total privacy and control. Self-hostable, API-first, and built for power users.
 
+## 📸 Screenshots
+
+| Dashboard (light) | Landing (dark) |
+| --- | --- |
+| ![Dashboard light theme](docs/screenshots/dashboard-light.png) | ![Landing dark theme](docs/screenshots/landing-dark.png) |
+
+| Dashboard (dark) | Mobile landing |
+| --- | --- |
+| ![Dashboard dark theme](docs/screenshots/dashboard-dark.png) | ![Landing on a phone](docs/screenshots/landing-phone.png) |
+
+More: [landing light](docs/screenshots/landing-light.png), [login](docs/screenshots/login-light.png).
+
 ## ✨ Features
 
 ### Core Functionality

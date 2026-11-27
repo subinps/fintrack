@@ -28,14 +28,14 @@ const renderActiveShape = (props: any) => {
 
     return (
         <g>
-            <text x={cx} y={cy} dy={-20} textAnchor="middle" fill="#9ca3af" fontSize={12}>
-                {payload.name}
+            <text x={cx} y={cy} dy={-20} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize={11} fontFamily="JetBrains Mono Variable, monospace" letterSpacing="1">
+                {String(payload.name).toUpperCase()}
             </text>
-            <text x={cx} y={cy} dy={10} textAnchor="middle" fill="#f3f4f6" fontSize={16} fontWeight="bold">
+            <text x={cx} y={cy} dy={10} textAnchor="middle" fill="hsl(var(--foreground))" fontSize={17} fontWeight="600">
                 {props.formatter ? props.formatter(value) : value}
             </text>
-            <text x={cx} y={cy} dy={30} textAnchor="middle" fill="#6b7280" fontSize={12}>
-                {`(${(percent * 100).toFixed(1)}%)`}
+            <text x={cx} y={cy} dy={30} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize={11} fontFamily="JetBrains Mono Variable, monospace">
+                {`${(percent * 100).toFixed(1)}%`}
             </text>
             <Sector
                 cx={cx}
@@ -67,7 +67,7 @@ export function InteractivePieChart({
     height = 300,
     innerRadius = 60,
     outerRadius = 80,
-    colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#6366f1'],
+    colors = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))', 'hsl(var(--primary))', 'hsl(var(--muted-foreground))'],
     centerText,
     formatter
 }: InteractivePieChartProps) {
@@ -89,6 +89,7 @@ export function InteractivePieChart({
                     <Pie
                         activeIndex={activeIndex}
                         activeShape={(props: any) => renderActiveShape({ ...props, formatter })}
+                        rootTabIndex={-1}
                         data={data}
                         cx="50%"
                         cy="50%"
@@ -104,7 +105,7 @@ export function InteractivePieChart({
                                 key={`cell-${index}`}
                                 fill={entry.color || colors[index % colors.length]}
                                 strokeWidth={2}
-                                stroke="rgba(0,0,0,0.2)"
+                                stroke="hsl(var(--card))"
                             />
                         ))}
                     </Pie>
@@ -116,8 +117,8 @@ export function InteractivePieChart({
                     )}
                     {centerText && activeIndex === -1 && (
                         <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
-                            <tspan x="50%" dy="-10" fontSize="14" fill="#9ca3af">{centerText.title}</tspan>
-                            <tspan x="50%" dy="24" fontSize="20" fontWeight="bold" fill="#f3f4f6">{centerText.value}</tspan>
+                            <tspan x="50%" dy="-10" fontSize="11" fontFamily="JetBrains Mono Variable, monospace" fill="hsl(var(--muted-foreground))">{centerText.title}</tspan>
+                            <tspan x="50%" dy="24" fontSize="18" fontWeight="600" fill="hsl(var(--foreground))">{centerText.value}</tspan>
                         </text>
                     )}
                 </PieChart>

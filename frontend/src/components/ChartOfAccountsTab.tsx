@@ -291,7 +291,7 @@ export function ChartOfAccountsTab() {
         ...(accounts
             ?.filter(a => a.type === formData.type)
             .map(a => a.subType)
-            .filter(Boolean) as string[]),
+            .filter(Boolean) as string[] || []),
         ...(dynamicCategories
             ?.filter(c => c.type === formData.type)
             .map(c => c.name) || [])
@@ -327,21 +327,22 @@ export function ChartOfAccountsTab() {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Chart of Accounts</h1>
-                    <p className="text-muted-foreground">Manage all your accounts, categories, and ledgers</p>
+                    <p className="eyebrow mb-2.5">Structure</p>
+                    <h1 className="text-display-sm">Chart of accounts</h1>
+                    <p className="mt-1.5 text-sm text-muted-foreground">Every account, category and ledger in one tree.</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" className="border-white/10 hover:bg-white/5" onClick={handleExport}>
-                        <Download className="mr-2 h-4 w-4" />
+                    <Button variant="outline" size="sm" onClick={handleExport}>
+                        <Download className="h-4 w-4" />
                         Export CSV
                     </Button>
                     <Dialog>
                         <DialogTrigger asChild>
-                            <Button variant="outline" className="border-white/10 hover:bg-white/5">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Manage Categories
+                            <Button variant="outline" size="sm">
+                                <Plus className="h-4 w-4" />
+                                Manage categories
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
@@ -487,23 +488,22 @@ export function ChartOfAccountsTab() {
             </div>
 
             <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                     type="search"
-                    placeholder="Search accounts by name or category..."
-                    className="pl-9 bg-card/50 border-white/5"
+                    placeholder="Search accounts by name or category…"
+                    className="pl-9"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
             </div>
 
             <Tabs defaultValue="ASSET" className="space-y-4">
-                <TabsList className="bg-background/50 backdrop-blur-md border border-white/10 h-12 p-1 rounded-full shadow-sm inline-flex">
+                <TabsList className="h-auto w-full flex-wrap justify-start">
                     {accountTypes.map(type => (
                         <TabsTrigger
                             key={type}
                             value={type}
-                            className="rounded-full px-6 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300"
                         >
                             {type}
                         </TabsTrigger>
