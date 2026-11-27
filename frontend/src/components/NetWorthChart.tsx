@@ -18,7 +18,7 @@ export function NetWorthChart() {
 
     if (isLoading) {
         return (
-            <Card>
+            <Card className="glow-balance">
                 <CardHeader>
                     <p className="eyebrow mb-1.5">History</p>
                     <CardTitle>Net worth over time</CardTitle>
@@ -32,7 +32,7 @@ export function NetWorthChart() {
 
     if (!history || history.length === 0) {
         return (
-            <Card>
+            <Card className="glow-balance">
                 <CardHeader>
                     <p className="eyebrow mb-1.5">History</p>
                     <CardTitle>Net worth over time</CardTitle>
@@ -50,7 +50,7 @@ export function NetWorthChart() {
     }
 
     return (
-        <Card>
+        <Card className="glow-balance">
             <CardHeader className="flex flex-row items-start justify-between space-y-0">
                 <div>
                     <p className="eyebrow mb-1.5">History</p>

@@ -13,6 +13,7 @@ interface InteractiveBarChartProps {
         name: string;
         color: string;
         stackId?: string;
+        isActive?: boolean;
     }[];
     onBarClick?: (data: DataItem) => void;
     height?: number;
@@ -64,7 +65,11 @@ export function InteractiveBarChart({
                             fill={bar.color}
                             radius={[4, 4, 0, 0]}
                             stackId={bar.stackId}
-                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                            className={`
+                                cursor-pointer hover:opacity-80 transition-opacity
+                                ${bar.isActive ? 'pill-glow' : ''}
+                                ${bar.isActive ? 'animate-pulse-subtle' : ''}
+                            `}
                         />
                     ))}
                 </BarChart>

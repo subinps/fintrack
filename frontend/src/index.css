@@ -8,9 +8,11 @@
 /*
  * Grid Precision tokens — the single source of truth for colour, type, radius and motion.
  * Semantic names only; no component should introduce its own hex value.
+ * Dark/modern theme inspired by Quiza (true black, vivid accents, sharp motion)
  */
 @layer base {
   :root {
+    /* ── Light theme (kept for system preference, but app defaults to dark) ── */
     --background: 216 22% 96%;
     --foreground: 215 27% 8%;
     --card: 0 0% 100%;
@@ -63,48 +65,63 @@
   }
 
   .dark {
-    --background: 216 27% 6%;
-    --foreground: 210 22% 96%;
-    --card: 216 22% 9%;
-    --card-foreground: 210 22% 96%;
-    --popover: 216 24% 10%;
-    --popover-foreground: 210 22% 96%;
-    --surface: 216 22% 11%;
-    --surface-strong: 216 18% 16%;
+    /* ── Quiza-inspired Dark Theme ── */
+    /* True black backgrounds for OLED friendliness */
+    --background: 0 0% 0%;           /* #000000 */
+    --foreground: 210 22% 98%;       /* #FAFAFA */
+    --card: 0 0% 3%;                 /* #080808 */
+    --card-foreground: 210 22% 98%;
+    --popover: 0 0% 4%;              /* #0A0A0A */
+    --popover-foreground: 210 22% 98%;
+    --surface: 0 0% 4%;              /* #0A0A0A */
+    --surface-strong: 0 0% 7%;       /* #121212 */
 
-    --primary: 222 89% 61%;
+    /* Vivid primary: electric blue (Quiza uses #137FEC ≈ 224 93% 50%) */
+    --primary: 224 93% 50%;          /* #137FEC */
     --primary-foreground: 0 0% 100%;
-    --primary-soft: 222 60% 16%;
-    --primary-strong: 222 90% 78%;
+    --primary-soft: 224 90% 12%;     /* Subtle tint on true black */
+    --primary-strong: 224 95% 60%;   /* #3B9AFF */
 
-    --secondary: 216 18% 15%;
-    --secondary-foreground: 210 22% 96%;
-    --muted: 216 18% 14%;
-    --muted-foreground: 216 13% 66%;
-    --accent: 216 18% 17%;
-    --accent-foreground: 210 22% 96%;
+    --secondary: 0 0% 8%;            /* #141414 */
+    --secondary-foreground: 210 22% 98%;
+    --muted: 0 0% 8%;                /* #141414 */
+    --muted-foreground: 216 13% 60%; /* Softer than pure gray */
+    --accent: 0 0% 10%;              /* #1A1A1A */
+    --accent-foreground: 210 22% 98%;
 
-    --destructive: 356 78% 60%;
+    --destructive: 0 85% 60%;        /* #EF4444 */
     --destructive-foreground: 0 0% 100%;
-    --success: 158 60% 44%;
-    --success-foreground: 216 27% 6%;
-    --warning: 38 92% 56%;
-    --warning-foreground: 216 27% 6%;
+    --success: 142 76% 36%;          /* #16A34A */
+    --success-foreground: 0 0% 100%;
+    --warning: 45 95% 53%;           /* #FBBF24 */
+    --warning-foreground: 0 0% 0%;
 
-    --border: 216 16% 18%;
-    --border-strong: 216 14% 28%;
-    --input: 216 16% 22%;
-    --ring: 222 89% 61%;
+    --border: 0 0% 12%;              /* #1F1F1F */
+    --border-strong: 0 0% 18%;       /* #2E2E2E */
+    --input: 0 0% 10%;               /* #1A1A1A */
+    --ring: 224 93% 50%;             /* Matches primary */
 
-    --grid-line: 216 16% 14%;
-    --shadow-panel: 0 1px 0 0 hsl(0 0% 100% / 0.03), 0 18px 40px -28px hsl(0 0% 0% / 0.8);
-    --shadow-lifted: 0 1px 0 0 hsl(0 0% 100% / 0.05), 0 30px 60px -30px hsl(0 0% 0% / 0.9);
+    /* Slightly larger, more modern radii */
+    --radius: 0.375rem;              /* 6px */
+    --radius-control: 0.5rem;        /* 8px */
+    --radius-panel: 0.75rem;         /* 12px */
 
-    --chart-1: 222 89% 63%;
-    --chart-2: 158 62% 46%;
-    --chart-3: 268 78% 68%;
-    --chart-4: 38 92% 58%;
-    --chart-5: 344 82% 66%;
+    /* Hairline grid on true black */
+    --grid-line: 0 0% 14%;           /* #242424 */
+
+    /* Deeper, richer shadows for dark mode */
+    --shadow-panel: 0 1px 0 0 hsl(0 0% 100% / 0.02), 0 8px 24px -12px hsl(0 0% 0% / 0.8);
+    --shadow-lifted: 0 4px 16px -4px hsl(0 0% 100% / 0.03), 0 32px 64px -32px hsl(0 0% 0% / 0.9);
+
+    /* Chart colors optimized for dark backgrounds */
+    --chart-1: 224 93% 58%;   /* Electric blue */
+    --chart-2: 142 76% 44%;   /* Emerald green */
+    --chart-3: 262 83% 58%;   /* Violet */
+    --chart-4: 45 95% 58%;    /* Amber */
+    --chart-5: 0 85% 65%;     /* Coral red */
+
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);    /* Quiza's snappy easing */
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);  /* Material-like */
   }
 
   * {
@@ -116,16 +133,24 @@
     scroll-behavior: smooth;
   }
 
+  /* Force dark mode as default (Quiza is dark-first) */
+  :root:not(.light) {
+    color-scheme: dark;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
     font-feature-settings: 'cv05' 1, 'ss03' 1;
     text-rendering: optimizeLegibility;
+    /* Quiza-style: subtle vignette on true black */
+    background-image: radial-gradient(ellipse 80% 50% at 50% 0%, hsl(var(--primary) / 0.06) 0%, transparent 60%),
+                      radial-gradient(ellipse 60% 40% at 50% 100%, hsl(var(--chart-3) / 0.04) 0%, transparent 50%);
   }
 
   ::selection {
-    background: hsl(var(--primary) / 0.22);
-    color: hsl(var(--foreground));
+    background: hsl(var(--primary) / 0.3);
+    color: hsl(var(--primary-foreground));
   }
 
   :focus-visible {
@@ -165,6 +190,20 @@
 }
 
 @layer components {
+  /* --- SpendIQ-style glow effects --- */
+
+  .glow-balance {
+    background: radial-gradient(circle at 85% 20%, hsl(var(--primary) / 0.28) 0%, hsl(var(--chart-3) / 0.15) 35%, hsl(var(--background)) 75%);
+  }
+
+  .glow-banner {
+    background: linear-gradient(135deg, hsl(var(--destructive) / 0.22) 0%, hsl(var(--chart-3) / 0.25) 50%, hsl(var(--background)) 100%);
+  }
+
+  .pill-glow {
+    box-shadow: 0 0 20px -3px hsl(var(--primary) / 0.5);
+  }
+
   /* Mono micro-label used for eyebrows, column heads and metadata */
   .eyebrow {
     font-family: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -184,17 +223,26 @@
   .panel {
     @apply rounded-panel border border-border bg-card;
     box-shadow: var(--shadow-panel);
+    /* Quiza-style: subtle inner highlight */
+    background-image: linear-gradient(180deg, hsl(0 0% 100% / 0.03) 0%, transparent 100%);
   }
 
   .panel-flat {
     @apply rounded-panel border border-border bg-card;
   }
 
+  /* Elevated panel for modals, dropdowns - stronger shadow */
+  .panel-elevated {
+    @apply rounded-panel border border-border bg-card;
+    box-shadow: var(--shadow-lifted);
+    background-image: linear-gradient(180deg, hsl(0 0% 100% / 0.04) 0%, transparent 100%);
+  }
+
   /* Faint engineering grid, used behind hero and empty states */
   .grid-backdrop {
     background-image:
-      linear-gradient(to right, hsl(var(--grid-line) / 0.9) 1px, transparent 1px),
-      linear-gradient(to bottom, hsl(var(--grid-line) / 0.9) 1px, transparent 1px);
+      linear-gradient(to right, hsl(var(--grid-line) / 0.6) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--grid-line) / 0.6) 1px, transparent 1px);
     background-size: 48px 48px;
     background-position: center top;
     -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 25%, transparent 75%);
@@ -202,13 +250,13 @@
   }
 
   .hairline-top {
-    box-shadow: inset 0 1px 0 0 hsl(var(--foreground) / 0.06);
+    box-shadow: inset 0 1px 0 0 hsl(var(--foreground) / 0.04);
   }
 
   /* Code surface stays dark in both themes, like a terminal */
   .code-block {
-    background-color: hsl(216 27% 6%);
-    border: 1px solid hsl(0 0% 100% / 0.1);
+    background-color: hsl(0 0% 2%);
+    border: 1px solid hsl(0 0% 100% / 0.06);
     color: hsl(210 22% 88%);
     border-radius: var(--radius-panel);
     font-family: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -226,15 +274,18 @@
 
   .status-dot {
     @apply inline-block h-1.5 w-1.5 rounded-full bg-current;
-    box-shadow: 0 0 0 3px hsl(var(--current, var(--success)) / 0.15);
+    box-shadow: 0 0 0 3px hsl(var(--current, var(--success)) / 0.2);
+    /* Quiza-style pulse ring */
+    animation: pulse-ring 2s var(--ease-out) infinite;
   }
 
+  /* ── Entrance Animations (Quiza-style: snappy, purposeful) ── */
   .rise-in {
-    animation: rise-in 0.45s var(--ease-out) both;
+    animation: rise-in 0.4s var(--ease-out) both;
   }
 
   .stagger > * {
-    animation: rise-in 0.45s var(--ease-out) both;
+    animation: rise-in 0.4s var(--ease-out) both;
   }
 
   .stagger > *:nth-child(1) { animation-delay: 0.02s; }
@@ -244,6 +295,7 @@
   .stagger > *:nth-child(5) { animation-delay: 0.18s; }
   .stagger > *:nth-child(6) { animation-delay: 0.22s; }
 
+  /* Quiza-style shimmer for loading states */
   .shimmer {
     background: linear-gradient(
       90deg,
@@ -252,7 +304,46 @@
       hsl(var(--muted)) 100%
     );
     background-size: 200% 100%;
-    animation: shimmer 1.6s linear infinite;
+    animation: shimmer 1.4s var(--ease-in-out) infinite;
+  }
+
+  /* Button press feedback (Quiza: subtle scale + translate) */
+  .pressable {
+    transition: transform 0.08s var(--ease-out), box-shadow 0.15s var(--ease-out);
+  }
+  .pressable:active:not(:disabled) {
+    transform: translateY(0.5px) scale(0.99);
+  }
+
+  /* Card hover lift (Quiza-style) */
+  .card-hover {
+    transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), border-color 0.2s var(--ease-out);
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lifted);
+    border-color: hsl(var(--border-strong));
+  }
+
+  /* Input focus ring (Quiza-style) */
+  .input-focus {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  /* Gradient text utility */
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--chart-3)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Border gradient utility */
+  .border-gradient {
+    position: relative;
+    background: linear-gradient(hsl(var(--card)), hsl(var(--card))) padding-box,
+                linear-gradient(135deg, hsl(var(--primary)), hsl(var(--chart-3))) border-box;
+    border: 1px solid transparent;
   }
 }
 
@@ -264,36 +355,13 @@
   .tracking-tightest {
     letter-spacing: -0.035em;
   }
-}
 
-@keyframes rise-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
+  /* Hide scrollbar but keep scroll */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes shimmer {
-  from {
-    background-position: 200% 0;
-  }
-  to {
-    background-position: -200% 0;
-  }
-}
-
-@keyframes pulse-ring {
-  0% {
-    box-shadow: 0 0 0 0 hsl(var(--success) / 0.5);
-  }
-  70% {
-    box-shadow: 0 0 0 6px hsl(var(--success) / 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 hsl(var(--success) / 0);
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
