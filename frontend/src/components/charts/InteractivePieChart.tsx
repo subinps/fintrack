@@ -23,18 +23,20 @@ interface InteractivePieChartProps {
     formatter?: (value: number) => string;
 }
 
+const MONO = 'JetBrains Mono Variable, monospace';
+
 const renderActiveShape = (props: any) => {
     const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, value, percent } = props;
 
     return (
         <g>
-            <text x={cx} y={cy} dy={-20} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize={11} fontFamily="JetBrains Mono Variable, monospace" letterSpacing="1">
+            <text x={cx} y={cy} dy={-18} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize={10.5} fontFamily={MONO} letterSpacing="0.12em">
                 {String(payload.name).toUpperCase()}
             </text>
-            <text x={cx} y={cy} dy={10} textAnchor="middle" fill="hsl(var(--foreground))" fontSize={17} fontWeight="600">
+            <text x={cx} y={cy} dy={8} textAnchor="middle" fill="hsl(var(--foreground))" fontSize={16} fontWeight="600" fontFamily={MONO}>
                 {props.formatter ? props.formatter(value) : value}
             </text>
-            <text x={cx} y={cy} dy={30} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize={11} fontFamily="JetBrains Mono Variable, monospace">
+            <text x={cx} y={cy} dy={28} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize={11} fontFamily={MONO}>
                 {`${(percent * 100).toFixed(1)}%`}
             </text>
             <Sector
@@ -45,17 +47,19 @@ const renderActiveShape = (props: any) => {
                 startAngle={startAngle}
                 endAngle={endAngle}
                 fill={fill}
-                className="drop-shadow-lg transition-all duration-300"
+                cornerRadius={4}
+                className="drop-shadow-lg"
             />
             <Sector
                 cx={cx}
                 cy={cy}
                 startAngle={startAngle}
                 endAngle={endAngle}
-                innerRadius={outerRadius + 8}
+                innerRadius={outerRadius + 9}
                 outerRadius={outerRadius + 12}
                 fill={fill}
-                opacity={0.3}
+                opacity={0.35}
+                cornerRadius={4}
             />
         </g>
     );
@@ -67,38 +71,51 @@ export function InteractivePieChart({
     height = 300,
     innerRadius = 60,
     outerRadius = 80,
-    colors = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))', 'hsl(var(--primary))', 'hsl(var(--muted-foreground))'],
+    colors = [
+        'hsl(var(--chart-1))',
+        'hsl(var(--chart-2))',
+        'hsl(var(--chart-3))',
+        'hsl(var(--chart-4))',
+        'hsl(var(--chart-5))',
+        'hsl(var(--chart-6))',
+        'hsl(var(--chart-7))',
+        'hsl(var(--chart-8))',
+    ],
     centerText,
     formatter
 }: InteractivePieChartProps) {
-    const [activeIndex, setActiveIndex] = useState(0);
+    const [activeIndex, setActiveIndex] = useState(-1);
 
     const onPieEnter = (_: any, index: number) => {
         setActiveIndex(index);
     };
 
-    const handleClick = (data: any, index: number) => {
+    const handleClick = (entry: any, index: number) => {
         setActiveIndex(index);
-        onSliceClick?.(data);
+        onSliceClick?.(entry);
     };
 
     return (
-        <div style={{ width: '100%', height }}>
+        <div className="relative" style={{ width: '100%', height }}>
             <ResponsiveContainer>
                 <PieChart>
                     <Pie
                         activeIndex={activeIndex}
                         activeShape={(props: any) => renderActiveShape({ ...props, formatter })}
-                        rootTabIndex={-1}
                         data={data}
                         cx="50%"
                         cy="50%"
                         innerRadius={innerRadius}
                         outerRadius={outerRadius}
+                        paddingAngle={2}
+                        cornerRadius={4}
                         dataKey="value"
                         onMouseEnter={onPieEnter}
+                        onMouseLeave={() => setActiveIndex(-1)}
                         onClick={handleClick}
-                        className="cursor-pointer focus:outline-none"
+                        animationDuration={650}
+                        animationEasing="ease-out"
+                        className="cursor-pointer"
                     >
                         {data.map((entry, index) => (
                             <Cell
@@ -115,14 +132,14 @@ export function InteractivePieChart({
                             wrapperStyle={{ outline: 'none' }}
                         />
                     )}
-                    {centerText && activeIndex === -1 && (
-                        <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle">
-                            <tspan x="50%" dy="-10" fontSize="11" fontFamily="JetBrains Mono Variable, monospace" fill="hsl(var(--muted-foreground))">{centerText.title}</tspan>
-                            <tspan x="50%" dy="24" fontSize="18" fontWeight="600" fill="hsl(var(--foreground))">{centerText.value}</tspan>
-                        </text>
-                    )}
                 </PieChart>
             </ResponsiveContainer>
+            {centerText && activeIndex === -1 && (
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <span className="eyebrow text-muted-foreground">{centerText.title}</span>
+                    <span className="tabular mt-1 text-title font-semibold text-foreground">{centerText.value}</span>
+                </div>
+            )}
         </div>
     );
 }

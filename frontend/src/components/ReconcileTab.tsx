@@ -37,6 +37,8 @@ import {
   useUndoRecon,
   type ImportPreview,
 } from '../hooks/useFinance';
+import { PageGuide } from '@/components/system/PageGuide';
+import { PAGE_HELP } from '@/lib/page-help';
 
 const money = (value: string | number | null | undefined) => {
   const n = typeof value === 'string' ? Number(value) : value ?? 0;
@@ -95,6 +97,8 @@ export function ReconcileTab() {
           )}
         </div>
       </header>
+
+      <PageGuide {...PAGE_HELP.reconcile} />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="grid w-full grid-cols-3 sm:w-auto sm:inline-grid">

@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useGetAccounts, useAddAccount, useEditAccount, useDeleteAccount } from '../hooks/useQueries';
-import { Plus, Edit, Trash2, Building2, Wallet, TrendingUp, TrendingDown, ArrowRightLeft, Check, ChevronsUpDown, Download, FileSpreadsheet, Search, FileText } from 'lucide-react';
+import { Plus, Edit, Trash2, TrendingUp, TrendingDown, Check, ChevronsUpDown, Download, FileSpreadsheet, Search, FileText, Landmark, CreditCard, Scale } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -18,6 +18,11 @@ import { useGetCategories, useAddCategory, useEditCategory, useDeleteCategory } 
 import { ScrollArea } from './ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { LedgerViewDialog } from './LedgerViewDialog';
+import { IconBadge, type BadgeTone } from '@/components/system/IconBadge';
+import { PageGuide } from '@/components/system/PageGuide';
+import { PAGE_HELP } from '@/lib/page-help';
+import { formatINR } from '@/lib/finance';
+import type { LucideIcon } from 'lucide-react';
 import api from '../lib/api';
 
 function CategoryManager() {
@@ -227,6 +232,15 @@ const DEFAULT_CATEGORIES = {
     'EQUITY': ['Opening Balance', 'Capital', 'Retained Earnings'],
 };
 
+/** One icon and colour per account type, shared by the type switcher and the rows. */
+const TYPE_META: Record<string, { tone: BadgeTone; icon: LucideIcon; label: string; blurb: string }> = {
+    ASSET: { tone: 'assets', icon: Landmark, label: 'Assets', blurb: 'What you own' },
+    LIABILITY: { tone: 'liabilities', icon: CreditCard, label: 'Liabilities', blurb: 'What you owe' },
+    EQUITY: { tone: 'equity', icon: Scale, label: 'Equity', blurb: 'What is left over' },
+    INCOME: { tone: 'income', icon: TrendingUp, label: 'Income', blurb: 'What comes in' },
+    EXPENSE: { tone: 'expense', icon: TrendingDown, label: 'Expenses', blurb: 'What goes out' },
+};
+
 export function ChartOfAccountsTab() {
     const { data: accounts, isLoading } = useGetAccounts();
     const addAccount = useAddAccount();
@@ -368,17 +382,6 @@ export function ChartOfAccountsTab() {
 
     const accountTypes = ['ASSET', 'LIABILITY', 'EQUITY', 'INCOME', 'EXPENSE'];
 
-    const getIcon = (type: string) => {
-        switch (type) {
-            case 'ASSET': return <Wallet className="h-4 w-4" />;
-            case 'LIABILITY': return <TrendingDown className="h-4 w-4" />;
-            case 'EQUITY': return <Building2 className="h-4 w-4" />;
-            case 'INCOME': return <TrendingUp className="h-4 w-4" />;
-            case 'EXPENSE': return <ArrowRightLeft className="h-4 w-4" />;
-            default: return <Wallet className="h-4 w-4" />;
-        }
-    };
-
     const { data: dynamicCategories } = useGetCategories();
 
     // Get unique subTypes for the current selected type in the form
@@ -417,6 +420,18 @@ export function ChartOfAccountsTab() {
         return Object.entries(grouped).sort((a, b) => a[0].localeCompare(b[0]));
     };
 
+    /** Counts and balances per account type, shown on the type switcher. */
+    const typeStats = accountTypes.map(type => {
+        const ofType = accounts?.filter(a => a.type === type) || [];
+        const matching = getGroupedAccounts(type).reduce((n, [, group]) => n + group.accounts.length, 0);
+        return {
+            type,
+            count: ofType.length,
+            matching,
+            total: ofType.reduce((sum, account) => sum + Number(account.balance), 0),
+        };
+    });
+
     if (isLoading) {
         return <Skeleton className="h-64 w-full" />;
     }
@@ -453,7 +468,7 @@ export function ChartOfAccountsTab() {
                     </Dialog>
                     <Dialog open={open} onOpenChange={(val) => { setOpen(val); if (!val) resetForm(); }}>
                         <DialogTrigger asChild>
-                            <Button className="bg-primary hover:bg-primary/90 text-white">
+                            <Button>
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add Account
                             </Button>
@@ -583,6 +598,8 @@ export function ChartOfAccountsTab() {
                 </div>
             </div>
 
+            <PageGuide {...PAGE_HELP['chart-of-accounts']} />
+
             <div className="relative">
                 <Search className="absolute left-2.5 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -595,15 +612,25 @@ export function ChartOfAccountsTab() {
             </div>
 
             <Tabs defaultValue="ASSET" className="space-y-4">
-                <TabsList className="h-auto w-full flex-wrap justify-start">
-                    {accountTypes.map(type => (
-                        <TabsTrigger
-                            key={type}
-                            value={type}
-                        >
-                            {type}
-                        </TabsTrigger>
-                    ))}
+                <TabsList className="flex h-auto w-full snap-x gap-2 overflow-x-auto bg-transparent p-0 [-ms-overflow-style:none] [scrollbar-width:none] sm:grid sm:grid-cols-3 sm:overflow-visible lg:grid-cols-5">
+                    {typeStats.map(({ type, count, matching, total }) => {
+                        const meta = TYPE_META[type];
+                        return (
+                            <TabsTrigger
+                                key={type}
+                                value={type}
+                                className="group h-auto min-w-[9.5rem] snap-start justify-start gap-3 rounded-2xl border border-border bg-card px-3 py-3 text-left transition-colors duration-feedback ease-vault hover:border-primary/30 data-[state=active]:border-primary/45 data-[state=active]:bg-primary/5 data-[state=active]:shadow-sm sm:min-w-0"
+                            >
+                                <IconBadge icon={meta.icon} tone={meta.tone} size="sm" />
+                                <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-sm font-medium text-foreground">{meta.label}</span>
+                                    <span className="block truncate text-caption tabular-nums text-muted-foreground">
+                                        {searchQuery ? `${matching} of ${count}` : count} · <span className="font-medium text-foreground">{formatINR(total, { compact: true })}</span>
+                                    </span>
+                                </span>
+                            </TabsTrigger>
+                        );
+                    })}
                 </TabsList>
 
                 {accountTypes.map(type => {
@@ -612,79 +639,109 @@ export function ChartOfAccountsTab() {
                     return (
                         <TabsContent key={type} value={type} className="space-y-4">
                             {groupedAccounts.length === 0 ? (
-                                <div className="text-center py-12 text-muted-foreground border rounded-lg glass-card border-dashed border-white/10">
-                                    No {type.toLowerCase()} accounts found matching your search.
+                                <div className="panel flex flex-col items-center gap-4 px-6 py-12 text-center">
+                                    <IconBadge icon={TYPE_META[type].icon} tone={TYPE_META[type].tone} size="lg" />
+                                    <div className="space-y-1">
+                                        <p className="text-body font-medium text-foreground">
+                                            {searchQuery
+                                                ? `No ${TYPE_META[type].label.toLowerCase()} match “${searchQuery}”`
+                                                : `No ${TYPE_META[type].label.toLowerCase()} yet`}
+                                        </p>
+                                        <p className="mx-auto max-w-sm text-small text-muted-foreground">
+                                            {searchQuery
+                                                ? 'Try a shorter word, or clear the search to see every account.'
+                                                : `Add one with Add account above to start recording ${TYPE_META[type].label.toLowerCase()} in your ledger.`}
+                                        </p>
+                                    </div>
+                                    {searchQuery && (
+                                        <Button variant="outline" size="sm" onClick={() => setSearchQuery('')}>
+                                            Clear search
+                                        </Button>
+                                    )}
                                 </div>
                             ) : (
-                                <Accordion type="multiple" className="w-full space-y-4">
+                                <Accordion type="multiple" defaultValue={groupedAccounts.map(([subType]) => subType)} className="w-full space-y-3">
                                     {groupedAccounts.map(([subType, { accounts: groupAccounts, total }]) => (
-                                        <AccordionItem key={subType} value={subType} className="border-0 rounded-xl glass-card px-4 overflow-hidden">
-                                            <AccordionTrigger className="hover:no-underline py-4">
-                                                <div className="flex items-center justify-between w-full pr-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-semibold text-lg capitalize">{subType}</span>
-                                                        <span className="text-xs text-muted-foreground bg-white/5 px-2 py-0.5 rounded-full">
+                                        <AccordionItem key={subType} value={subType} className="panel overflow-hidden px-1">
+                                            <AccordionTrigger className="px-4 py-4 hover:no-underline">
+                                                <div className="flex w-full items-center justify-between gap-3 pr-2">
+                                                    <div className="flex min-w-0 items-center gap-2">
+                                                        <span className="truncate text-body font-semibold capitalize text-foreground">{subType}</span>
+                                                        <span className="shrink-0 rounded-full bg-surface-strong px-2 py-0.5 text-caption tabular-nums text-muted-foreground">
                                                             {groupAccounts.length}
                                                         </span>
                                                     </div>
-                                                    <div className="text-sm font-medium text-muted-foreground">
-                                                        Total: <span className={cn("text-foreground font-bold", total < 0 && "text-destructive")}>{formatCurrency(total)}</span>
-                                                    </div>
+                                                    <span className={cn('shrink-0 text-small font-semibold tabular-nums', total < 0 ? 'text-expense' : 'text-foreground')}>
+                                                        {formatCurrency(total)}
+                                                    </span>
                                                 </div>
                                             </AccordionTrigger>
-                                            <AccordionContent className="pb-4">
+                                            <AccordionContent className="px-3 pb-3">
                                                 <div className="grid gap-2">
                                                     {groupAccounts.map(account => (
-                                                        <div key={account.id} className="flex flex-col md:flex-row md:items-center justify-between p-3 rounded-lg bg-background/40 border border-white/5 hover:bg-background/60 hover:border-primary/20 transition-all duration-300 gap-3 group">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="p-2 rounded-full bg-primary/10 text-primary group-hover:scale-110 transition-transform duration-300">
-                                                                    {getIcon(account.type)}
-                                                                </div>
-                                                                <div>
-                                                                    <div className="font-medium">{account.name}</div>
-                                                                    {account.symbol && (
-                                                                        <div className="text-xs text-muted-foreground">{account.symbol}</div>
-                                                                    )}
+                                                        <div key={account.id} className="group flex flex-col gap-3 rounded-xl border border-border/70 bg-surface/50 p-3 transition-colors duration-feedback ease-vault hover:border-primary/30 hover:bg-surface md:flex-row md:items-center md:justify-between">
+                                                            <div className="flex min-w-0 items-center gap-3">
+                                                                <IconBadge
+                                                                    icon={TYPE_META[account.type]?.icon ?? Landmark}
+                                                                    tone={TYPE_META[account.type]?.tone ?? 'primary'}
+                                                                    size="md"
+                                                                />
+                                                                <div className="min-w-0">
+                                                                    <div className="truncate text-small font-medium text-foreground">{account.name}</div>
+                                                                    <div className="truncate text-caption text-muted-foreground">
+                                                                        {account.symbol || account.subType || 'Ledger account'}
+                                                                    </div>
                                                                 </div>
                                                             </div>
 
-                                                            <div className="flex items-center justify-between md:justify-end gap-4 md:gap-8 w-full md:w-auto">
+                                                            <div className="flex items-center justify-between gap-2 md:justify-end md:gap-6">
                                                                 <div className="text-right">
-                                                                    <div className="font-bold">{formatCurrency(Number(account.balance))}</div>
-                                                                    <div className="text-xs text-muted-foreground">Current Balance</div>
+                                                                    <div className={cn('text-small font-semibold tabular-nums', Number(account.balance) < 0 ? 'text-expense' : 'text-foreground')}>
+                                                                        {formatCurrency(Number(account.balance))}
+                                                                    </div>
+                                                                    <div className="text-caption text-muted-foreground">Balance</div>
                                                                 </div>
 
-                                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                                <div className="flex items-center gap-0.5">
                                                                     <Button
                                                                         variant="ghost"
                                                                         size="icon"
-                                                                        className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-primary/10 hover:text-primary"
+                                                                        className="h-9 w-9 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                                                                         onClick={() => setLedgerDialog({ open: true, accountId: account.id, accountName: account.name })}
-                                                                        title="View Ledger"
+                                                                        title="View ledger"
+                                                                        aria-label={`Open the ledger for ${account.name}`}
                                                                     >
                                                                         <FileText className="h-4 w-4" />
                                                                     </Button>
                                                                     <Button
                                                                         variant="ghost"
                                                                         size="icon"
-                                                                        className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-primary/10 hover:text-primary"
+                                                                        className="h-9 w-9 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                                                                         onClick={() => handleEdit(account)}
-                                                                        title="Edit Account"
+                                                                        title="Edit account"
+                                                                        aria-label={`Edit ${account.name}`}
                                                                     >
                                                                         <Edit className="h-4 w-4" />
                                                                     </Button>
                                                                     <Button
                                                                         variant="ghost"
                                                                         size="icon"
-                                                                        className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-primary/10 hover:text-primary"
+                                                                        className="h-9 w-9 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                                                                         onClick={() => handleExportLedger(account.id, account.name)}
-                                                                        title="Quick Export"
+                                                                        title="Export this ledger as CSV"
+                                                                        aria-label={`Export the ledger for ${account.name}`}
                                                                     >
                                                                         <FileSpreadsheet className="h-4 w-4" />
                                                                     </Button>
                                                                     <AlertDialog>
                                                                         <AlertDialogTrigger asChild>
-                                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/70 hover:text-destructive hover:bg-destructive/10">
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                className="h-9 w-9 text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+                                                                                title="Delete account"
+                                                                                aria-label={`Delete ${account.name}`}
+                                                                            >
                                                                                 <Trash2 className="h-4 w-4" />
                                                                             </Button>
                                                                         </AlertDialogTrigger>

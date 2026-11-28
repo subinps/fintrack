@@ -14,6 +14,8 @@ import { useRefreshAllPrices, useCachedMarketData } from '../hooks/useMarketData
 import type { Account } from '../hooks/useQueries';
 
 import { LedgerViewDialog } from './LedgerViewDialog';
+import { PageGuide } from '@/components/system/PageGuide';
+import { PAGE_HELP } from '@/lib/page-help';
 import { PortfolioPanel } from './PortfolioPanel';
 
 export function InvestmentsTab() {
@@ -244,7 +246,7 @@ export function InvestmentsTab() {
           </Button>
           <Dialog open={open} onOpenChange={handleDialogClose}>
             <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90 text-white">
+              <Button>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Investment
               </Button>
@@ -344,6 +346,8 @@ export function InvestmentsTab() {
           </Dialog>
         </div>
       </div>
+
+      <PageGuide {...PAGE_HELP.investments} />
 
       <Card className="glass-card border-0">
         <CardHeader>

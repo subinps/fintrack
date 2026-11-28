@@ -1,9 +1,11 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import {
+  AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
   Bell,
   CalendarDays,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
   Coins,
@@ -18,6 +20,8 @@ import {
   Wallet,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { PageGuide } from '@/components/system/PageGuide';
+import { PAGE_HELP } from '@/lib/page-help';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -1004,6 +1008,14 @@ export function BudgetsTab() {
   const overBudget = budgets.filter((budget) => Number(budget.totalRemainingPaise) < 0).length;
   const unbudgeted = summary?.unbudgeted ?? [];
 
+  const plannedPaise = budgets.reduce((sum, budget) => sum + Number(budget.totalLimitPaise), 0);
+  const spentPaise = budgets.reduce((sum, budget) => sum + Number(budget.totalSpentPaise), 0);
+  const plannedShare = plannedPaise > 0 ? Math.min(100, Math.round((spentPaise / plannedPaise) * 100)) : 0;
+  const daysLeft = budgets.length > 0 ? Math.max(...budgets.map((budget) => budget.daysLeft)) : null;
+  const monthLabel = summary?.month
+    ? new Date(`${summary.month}-01T00:00:00Z`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+    : new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+
   const openNew = (accountId?: number) => {
     setEditing(null);
     setPresetAccount(accountId ?? null);
@@ -1037,6 +1049,46 @@ export function BudgetsTab() {
           </div>
         }
       />
+
+      <PageGuide {...PAGE_HELP.budgets} />
+
+      {budgets.length > 0 && (
+        <section className="panel px-4 py-4 sm:px-5" aria-label="This month across all budgets">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="eyebrow">{monthLabel} · all budgets</p>
+              <p className="mt-1 text-small text-muted-foreground">
+                <span className="tabular font-medium text-foreground">{rupees(String(spentPaise))}</span> spent of{' '}
+                <span className="tabular">{rupees(String(plannedPaise))}</span> planned
+                {daysLeft != null && <span> · {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left</span>}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {overBudget > 0 ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/5 px-2.5 py-1 text-caption font-medium text-destructive">
+                  <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+                  {overBudget} over limit
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/5 px-2.5 py-1 text-caption font-medium text-success">
+                  <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+                  All inside limit
+                </span>
+              )}
+              <span className="tabular text-body font-semibold text-foreground">{plannedShare}%</span>
+            </div>
+          </div>
+          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-strong" role="presentation">
+            <div
+              className={cn(
+                'h-full rounded-full transition-[width] duration-layout ease-vault',
+                plannedShare >= 100 ? 'bg-destructive' : plannedShare >= 80 ? 'bg-warning' : 'bg-success'
+              )}
+              style={{ width: `${plannedShare}%` }}
+            />
+          </div>
+        </section>
+      )}
 
       <section className="panel glow-balance relative overflow-hidden p-5 sm:p-6" aria-label="Safe to spend">
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
@@ -1081,30 +1133,30 @@ export function BudgetsTab() {
             </div>
           </div>
 
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border/70 pt-4 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-            <div>
-              <dt className="eyebrow flex items-center gap-1.5">
-                <Wallet className="h-3 w-3" aria-hidden="true" /> Cash
+          <dl className="space-y-2.5 border-t border-border/70 pt-5 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="eyebrow flex items-center gap-1.5 whitespace-nowrap">
+                <Wallet className="h-3 w-3 shrink-0" aria-hidden="true" /> Cash
               </dt>
-              <dd className="mono mt-1 text-[15px] tabular-nums text-foreground">{rupees(safe?.liquidPaise)}</dd>
+              <dd className="mono shrink-0 text-[15px] tabular-nums text-foreground">{rupees(safe?.liquidPaise)}</dd>
             </div>
-            <div>
-              <dt className="eyebrow flex items-center gap-1.5">
-                <Target className="h-3 w-3" aria-hidden="true" /> Budgets
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="eyebrow flex items-center gap-1.5 whitespace-nowrap">
+                <Target className="h-3 w-3 shrink-0" aria-hidden="true" /> Budgets
               </dt>
-              <dd className="mono mt-1 text-[15px] tabular-nums text-foreground">−{rupees(safe?.reservedBudgetPaise)}</dd>
+              <dd className="mono shrink-0 text-[15px] tabular-nums text-foreground">−{rupees(safe?.reservedBudgetPaise)}</dd>
             </div>
-            <div>
-              <dt className="eyebrow flex items-center gap-1.5">
-                <CalendarDays className="h-3 w-3" aria-hidden="true" /> Bills due
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="eyebrow flex items-center gap-1.5 whitespace-nowrap">
+                <CalendarDays className="h-3 w-3 shrink-0" aria-hidden="true" /> Bills due
               </dt>
-              <dd className="mono mt-1 text-[15px] tabular-nums text-foreground">−{rupees(safe?.upcomingBillsPaise)}</dd>
+              <dd className="mono shrink-0 text-[15px] tabular-nums text-foreground">−{rupees(safe?.upcomingBillsPaise)}</dd>
             </div>
-            <div>
-              <dt className="eyebrow flex items-center gap-1.5">
-                <TrendingDown className="h-3 w-3" aria-hidden="true" /> Debt
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="eyebrow flex items-center gap-1.5 whitespace-nowrap">
+                <TrendingDown className="h-3 w-3 shrink-0" aria-hidden="true" /> Debt
               </dt>
-              <dd className="mono mt-1 text-[15px] tabular-nums text-foreground">−{rupees(safe?.debtDuesPaise)}</dd>
+              <dd className="mono shrink-0 text-[15px] tabular-nums text-foreground">−{rupees(safe?.debtDuesPaise)}</dd>
             </div>
           </dl>
         </div>

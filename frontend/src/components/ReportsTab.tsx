@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import api from '../lib/api';
 import { useBalanceSheet, useCashFlow, useProfitAndLoss, useTrialBalance, type PnlLine } from '../hooks/useFinance';
+import { PageGuide } from '@/components/system/PageGuide';
+import { PAGE_HELP } from '@/lib/page-help';
 
 const money = (value: string | number | null | undefined) => {
   const n = typeof value === 'string' ? Number(value) : value ?? 0;
@@ -118,6 +120,8 @@ export function ReportsTab() {
           </div>
         </div>
       </header>
+
+      <PageGuide {...PAGE_HELP.reports} />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">

@@ -21,6 +21,8 @@ import {
   useSplitGroup,
   useSplitGroups,
 } from '../hooks/useSplits';
+import { PageGuide } from '@/components/system/PageGuide';
+import { PAGE_HELP } from '@/lib/page-help';
 
 const money = (paise: string | number | null | undefined) => {
   const n = typeof paise === 'string' ? Number(paise) : paise ?? 0;
@@ -83,6 +85,8 @@ export function SplitsTab() {
           New group
         </Button>
       </div>
+
+      <PageGuide {...PAGE_HELP.shared} />
 
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -296,7 +300,7 @@ function GroupDetailView({ groupId, onBack }: { groupId: string; onBack: () => v
   const [newMember, setNewMember] = useState('');
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const members = group?.members ?? [];
+  const members = useMemo(() => group?.members ?? [], [group?.members]);
   const selected = participants ?? members.map((member) => member.id);
   const me = useMemo(() => members.find((member) => member.isMe), [members]);
 

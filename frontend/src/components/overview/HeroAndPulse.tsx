@@ -112,9 +112,9 @@ export function NetWorthHero({
               className="h-12 w-full"
               ariaLabel="Net worth over the last twelve months"
             />
-            <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
-              <span className="mono uppercase tracking-[0.12em]">Balance sheet</span>
-              <span className="mono">{debtShare.toFixed(0)}% debt</span>
+            <p className="sr-only">Assets against debt</p>
+            <div className="mt-3 flex items-center justify-end text-[10px] text-muted-foreground">
+              <span className="mono whitespace-nowrap">{debtShare.toFixed(0)}% debt</span>
             </div>
             <div className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
               <span className="h-full bg-chart-1" style={{ width: `${100 - debtShare}%` }} />

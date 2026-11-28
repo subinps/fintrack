@@ -27,9 +27,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ErrorState, SectionHeading, SkeletonBlock } from './overview/primitives';
+import { PageGuide } from '@/components/system/PageGuide';
+import { PAGE_HELP } from '@/lib/page-help';
 import { cn } from '@/lib/utils';
 import { formatINR } from '@/lib/finance';
 import {
@@ -264,6 +265,8 @@ export function AutomationsTab() {
           </Button>
         }
       />
+
+      <PageGuide {...PAGE_HELP.automations} />
 
       <div
         className={cn(
@@ -733,20 +736,33 @@ function AutomationEditor({
 
         <div className="space-y-6 px-5 py-5 sm:px-6">
           {state.mode === 'create' && templates.length > 0 ? (
-            <Field label="Start from a template" hint="optional">
-              <Select value="" onValueChange={applyTemplate}>
-                <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Choose a template to prefill the script" />
-                </SelectTrigger>
-                <SelectContent>
-                  {templates.map((template) => (
-                    <SelectItem key={template.id} value={template.id}>
-                      {template.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 font-mono text-[11px] font-semibold text-primary">1</span>
+                <p className="text-[12.5px] font-medium text-foreground">Pick a template — it fills in the trigger and the actions</p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {templates.map((template) => (
+                  <button
+                    key={template.id}
+                    type="button"
+                    onClick={() => applyTemplate(template.id)}
+                    className="flex min-h-[56px] items-start gap-2.5 rounded-control border border-border bg-background/40 p-3 text-left transition-colors duration-feedback ease-vault hover:border-primary/40 hover:bg-primary/5"
+                  >
+                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <Zap className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[12.5px] font-medium text-foreground">{template.name}</span>
+                      <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">{template.description}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11.5px] text-muted-foreground">
+                Or write your own below — a name and a trigger are all that is required.
+              </p>
+            </div>
           ) : null}
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -765,7 +781,10 @@ function AutomationEditor({
           </div>
 
           <section className="space-y-3">
-            <p className="eyebrow">Trigger</p>
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 font-mono text-[11px] font-semibold text-primary">2</span>
+              <p className="text-[12.5px] font-medium text-foreground">When should it run?</p>
+            </div>
             <div className="grid grid-cols-2 gap-1 rounded-xl border border-border bg-muted/30 p-1 sm:grid-cols-4">
               {(['MANUAL', 'SCHEDULE', 'EVENT', 'WEBHOOK'] as TriggerType[]).map((type) => (
                 <button
@@ -861,7 +880,10 @@ function AutomationEditor({
 
           <section className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="eyebrow">Script</p>
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 font-mono text-[11px] font-semibold text-primary">3</span>
+                <p className="text-[12.5px] font-medium text-foreground">What should it do?</p>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowToolkit((value) => !value)}
@@ -949,7 +971,7 @@ log(...values)           printed in the run log`}
             </Button>
             <Button className="h-11 gap-2" onClick={() => save(false)} disabled={busy || problems.length > 0}>
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-              {savedId ? 'Save' : 'Create'}
+              {savedId ? 'Save' : 'Create automation'}
             </Button>
           </div>
         </div>

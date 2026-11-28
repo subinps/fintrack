@@ -10,6 +10,8 @@ import { CalendarClock, Info, Landmark, Plus, ReceiptText, Trash2 } from 'lucide
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useTaxSummary, useUpdateTaxProfile } from '../hooks/useFinance';
+import { PageGuide } from '@/components/system/PageGuide';
+import { PAGE_HELP } from '@/lib/page-help';
 
 const money = (value: string | number | null | undefined) => {
   const n = typeof value === 'string' ? Number(value) : value ?? 0;
@@ -93,6 +95,8 @@ export function TaxTab() {
           </Badge>
         </div>
       </header>
+
+      <PageGuide {...PAGE_HELP.tax} />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Tile label="Income this year" value={money(data.totalIncome)} hint={`${data.income.length} income sources`} />

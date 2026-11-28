@@ -65,7 +65,6 @@ export function LoginPage() {
 
             if (isLogin) {
                 login(res.data.accessToken, res.data.refreshToken, res.data.user);
-                toast.success('Signed in');
             } else {
                 navigate('/verify-email');
             }

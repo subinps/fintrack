@@ -3,7 +3,11 @@ import { useAuth } from '../context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { User, Mail, Shield, Trash2, Smartphone, Laptop, Globe, Download, Upload } from 'lucide-react';
+import { User, Mail, Shield, Trash2, Smartphone, Laptop, Globe, Download, Upload, LayoutDashboard, Palette, Sun } from 'lucide-react';
+import { PageGuide } from '@/components/system/PageGuide';
+import { AccentPicker } from '@/components/system/AccentPicker';
+import { ThemeChooser } from '@/components/ThemeToggle';
+import { PAGE_HELP } from '@/lib/page-help';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +28,8 @@ interface Session {
   isCurrent: boolean;
 }
 
+const SESSION_PREVIEW = 4;
+
 export function ProfileTab() {
   const { user, logout } = useAuth();
   const resetData = useResetData();
@@ -38,6 +44,24 @@ export function ProfileTab() {
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [revokePasswordOpen, setRevokePasswordOpen] = useState(false);
   const [revokePassword, setRevokePassword] = useState('');
+  const [showAllSessions, setShowAllSessions] = useState(false);
+  const [landing, setLanding] = useState(() => {
+    try {
+      return localStorage.getItem('fintrack:landing') || 'overview';
+    } catch {
+      return 'overview';
+    }
+  });
+
+  const chooseLanding = (value: string) => {
+    setLanding(value);
+    try {
+      localStorage.setItem('fintrack:landing', value);
+    } catch {
+      // Private browsing can refuse storage; the choice still applies for this session.
+    }
+    toast.success('Start screen updated');
+  };
 
   // Fetch Sessions
   const { data: sessions, isLoading: sessionsLoading } = useQuery<Session[]>({
@@ -50,6 +74,10 @@ export function ProfileTab() {
 
   const currentSession = sessions?.find(s => s.isCurrent);
   const otherSessions = sessions?.filter(s => !s.isCurrent) || [];
+  const desktopSessions = otherSessions.filter(s => !s.device?.toLowerCase().includes('mobile'));
+  const mobileSessions = otherSessions.filter(s => s.device?.toLowerCase().includes('mobile'));
+  const shownDesktop = showAllSessions ? desktopSessions : desktopSessions.slice(0, SESSION_PREVIEW);
+  const shownMobile = showAllSessions ? mobileSessions : mobileSessions.slice(0, SESSION_PREVIEW);
 
   // Revoke Session Mutation
   const revokeSession = useMutation({
@@ -220,6 +248,67 @@ export function ProfileTab() {
         </div>
       </div>
 
+      <PageGuide {...PAGE_HELP.profile} />
+
+      <section className="grid gap-4 md:grid-cols-2" aria-label="Appearance and habits">
+        <div className="rounded-panel border border-border bg-card p-5 shadow-panel">
+          <div className="mb-4 flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Palette className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div>
+              <h3 className="text-body font-semibold text-foreground">Appearance</h3>
+              <p className="text-caption text-muted-foreground">Kept on this browser, not your account.</p>
+            </div>
+          </div>
+          <p className="eyebrow mb-2">Theme</p>
+          <ThemeChooser />
+          <div className="my-4 h-px bg-border" aria-hidden="true" />
+          <AccentPicker />
+        </div>
+
+        <div className="rounded-panel border border-border bg-card p-5 shadow-panel">
+          <div className="mb-4 flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div>
+              <h3 className="text-body font-semibold text-foreground">Where FinTrack opens</h3>
+              <p className="text-caption text-muted-foreground">The screen you land on after signing in.</p>
+            </div>
+          </div>
+          <div className="grid gap-2" role="group" aria-label="Start screen">
+            {[
+              { id: 'overview', label: 'Overview', hint: 'Net worth and this month' },
+              { id: 'transactions', label: 'Transactions', hint: 'The full ledger' },
+              { id: 'budgets', label: 'Budgets & goals', hint: 'What is left to spend' },
+              { id: 'reports', label: 'Reports', hint: 'P&L, balance sheet, cash flow' },
+            ].map((option) => {
+              const selected = landing === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => chooseLanding(option.id)}
+                  aria-pressed={selected}
+                  className={`flex min-h-[44px] items-center justify-between gap-3 rounded-control border px-3 py-2 text-left transition-colors duration-feedback ease-vault ${
+                    selected
+                      ? 'border-primary/40 bg-primary/5'
+                      : 'border-border bg-surface/60 hover:border-border-strong'
+                  }`}
+                >
+                  <span className="min-w-0">
+                    <span className="block text-small font-medium text-foreground">{option.label}</span>
+                    <span className="block truncate text-caption text-muted-foreground">{option.hint}</span>
+                  </span>
+                  {selected && <Sun className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       <div className="grid gap-8 md:grid-cols-3">
         {/* Main Settings Column */}
         <div className="md:col-span-2 space-y-8">
@@ -306,11 +395,11 @@ export function ProfileTab() {
                 )}
 
                 {/* Desktop Sessions */}
-                {otherSessions.filter(s => !s.device?.toLowerCase().includes('mobile')).length > 0 && (
+                {desktopSessions.length > 0 && (
                   <div className="space-y-2">
                     <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Desktop Devices</h4>
                     <div className="space-y-3">
-                      {otherSessions.filter(s => !s.device?.toLowerCase().includes('mobile')).map((session) => (
+                      {shownDesktop.map((session) => (
                         <div key={session.id} className="flex items-center justify-between p-4 rounded-xl bg-card border border-border/50 hover:border-border transition-all">
                           <div className="flex items-center gap-4">
                             <div className="p-3 bg-secondary rounded-full text-muted-foreground">
@@ -342,11 +431,11 @@ export function ProfileTab() {
                 )}
 
                 {/* Mobile Sessions */}
-                {otherSessions.filter(s => s.device?.toLowerCase().includes('mobile')).length > 0 && (
+                {mobileSessions.length > 0 && (
                   <div className="space-y-2">
                     <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">Mobile Devices</h4>
                     <div className="space-y-3">
-                      {otherSessions.filter(s => s.device?.toLowerCase().includes('mobile')).map((session) => (
+                      {shownMobile.map((session) => (
                         <div key={session.id} className="flex items-center justify-between p-4 rounded-xl bg-card border border-border/50 hover:border-border transition-all">
                           <div className="flex items-center gap-4">
                             <div className="p-3 bg-secondary rounded-full text-muted-foreground">
@@ -375,6 +464,20 @@ export function ProfileTab() {
                       ))}
                     </div>
                   </div>
+                )}
+
+                {otherSessions.length > SESSION_PREVIEW && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAllSessions(v => !v)}
+                    aria-expanded={showAllSessions}
+                    className="w-full text-muted-foreground"
+                  >
+                    {showAllSessions
+                      ? 'Show fewer sessions'
+                      : `Show all ${otherSessions.length} other sessions`}
+                  </Button>
                 )}
               </div>
             )}

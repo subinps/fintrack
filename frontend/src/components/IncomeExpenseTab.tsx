@@ -8,6 +8,8 @@ import { InteractiveBarChart } from './charts/InteractiveBarChart';
 import { InteractivePieChart } from './charts/InteractivePieChart';
 import { format } from 'date-fns';
 import { TransactionDialog } from './TransactionDialog';
+import { PageGuide } from '@/components/system/PageGuide';
+import { PAGE_HELP } from '@/lib/page-help';
 
 
 type ViewLevel = 'monthly' | 'category' | 'transactions';
@@ -155,6 +157,8 @@ export function IncomeExpenseTab() {
 
     return (
         <div className="space-y-6">
+            {viewLevel === 'monthly' && <PageGuide {...PAGE_HELP['income-expense']} />}
+
             {/* Summary Cards - Only show on top level */}
             {viewLevel === 'monthly' && (
                 <div className="grid gap-4 md:grid-cols-3">

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Plus, ReceiptText, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useGetAccounts, useGetNetWorthHistory, useGetTransactions } from '../hooks/useQueries';
+import { useGetAccounts, useGetNetWorthHistory, useGetTransactions, type NetWorthSnapshot } from '../hooks/useQueries';
 import { useCachedMarketData } from '../hooks/useMarketData';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -21,6 +21,8 @@ import { cn } from '@/lib/utils';
 import { ErrorState, SectionHeading, SkeletonBlock } from './overview/primitives';
 import { BudgetPulseCard } from './overview/BudgetPulseCard';
 import { HealthCompass, NetWorthHero, PageHeader, PulseGrid } from './overview/HeroAndPulse';
+import { PageGuide } from '@/components/system/PageGuide';
+import { PAGE_HELP } from '@/lib/page-help';
 import { CashflowChartCard, NetWorthTrendCard, SpendingDonutCard } from './overview/Charts';
 import { AccountsCard, ActivityCard, RecurringCard, SignalsCard } from './overview/Panels';
 
@@ -152,18 +154,22 @@ export function OverviewTab({ onNavigate }: OverviewTabProps) {
     boundary.setHours(0, 0, 0, 0);
     return snapshots.filter((snapshot) => new Date(snapshot.date) < boundary);
   }, [snapshots]);
-  const trendSnapshots = useMemo(
-    () => [
-      ...priorSnapshots,
-      {
-        date: new Date().toISOString(),
-        netWorth: summary.netWorth,
-        assets: summary.assets,
-        liabilities: summary.liabilities,
-      },
-    ],
-    [priorSnapshots, summary]
-  );
+  const trendSnapshots = useMemo(() => {
+    const byMonth = new Map<string, NetWorthSnapshot>();
+    for (const snapshot of priorSnapshots) {
+      const month = new Date(snapshot.date).toISOString().slice(0, 7);
+      const kept = byMonth.get(month);
+      if (!kept || new Date(snapshot.date) > new Date(kept.date)) byMonth.set(month, snapshot);
+    }
+    const live = {
+      date: new Date().toISOString(),
+      netWorth: summary.netWorth,
+      assets: summary.assets,
+      liabilities: summary.liabilities,
+    };
+    byMonth.set(live.date.slice(0, 7), live);
+    return [...byMonth.values()].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [priorSnapshots, summary]);
 
   const months = RANGE_MONTHS[range];
   const visibleCashflow = useMemo(() => fullCashflow.slice(-Math.max(3, months)), [fullCashflow, months]);
@@ -244,6 +250,8 @@ export function OverviewTab({ onNavigate }: OverviewTabProps) {
         rangeControl={<RangeControl value={range} onChange={setRange} />}
         onNewTransaction={() => onNavigate?.('transactions')}
       />
+
+      <PageGuide {...PAGE_HELP.overview} />
 
       <div className="grid gap-4 lg:grid-cols-12">
         <div className="lg:col-span-8">

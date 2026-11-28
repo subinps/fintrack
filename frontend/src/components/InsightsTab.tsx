@@ -5,6 +5,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowRight, ArrowUpRight, Compass, Lightbulb, TriangleAlert, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDigest, useInsights } from '../hooks/useFinance';
+import { PageGuide } from '@/components/system/PageGuide';
+import { PAGE_HELP } from '@/lib/page-help';
 
 const money = (value: string | number | null | undefined) => {
   const n = typeof value === 'string' ? Number(value) : value ?? 0;
@@ -34,6 +36,8 @@ export function InsightsTab({ onNavigate }: { onNavigate?: (tab: string) => void
           </p>
         </div>
       </header>
+
+      <PageGuide {...PAGE_HELP.insights} />
 
       {insightsQuery.isLoading ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

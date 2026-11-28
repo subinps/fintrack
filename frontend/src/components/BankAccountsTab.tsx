@@ -15,6 +15,8 @@ import { AccountBalanceHistoryDialog } from './AccountBalanceHistoryDialog';
 import { History } from 'lucide-react';
 
 import { LedgerViewDialog } from './LedgerViewDialog';
+import { PageGuide } from '@/components/system/PageGuide';
+import { PAGE_HELP } from '@/lib/page-help';
 
 export function BankAccountsTab() {
   const { data: accounts, isLoading } = useGetBankAccounts();
@@ -221,6 +223,8 @@ export function BankAccountsTab() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <PageGuide {...PAGE_HELP.accounts} />
 
       <Card className="glass-card border-0">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

@@ -36,6 +36,8 @@ import {
   type McpTokenCreated,
 } from '../hooks/useMcp';
 import { ErrorState, SectionHeading, SkeletonBlock } from './overview/primitives';
+import { PageGuide } from '@/components/system/PageGuide';
+import { PAGE_HELP } from '@/lib/page-help';
 
 type Panel = 'keys' | 'drafts' | 'activity';
 
@@ -400,6 +402,8 @@ export function ConnectAiTab() {
         }
       />
 
+      <PageGuide {...PAGE_HELP['connect-ai']} />
+
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="panel space-y-4 p-5">
           <div className="flex flex-wrap gap-1 rounded-xl border border-border bg-muted/30 p-1">
@@ -645,6 +649,19 @@ export function ConnectAiTab() {
                 </li>
               ))}
             </ol>
+          </div>
+
+          <div className="panel space-y-2 p-5">
+            <p className="eyebrow">What you can ask</p>
+            <ul className="space-y-1.5 text-[11.5px] leading-relaxed text-muted-foreground">
+              <li>“How much did I spend on food this month?”</li>
+              <li>“What is my net worth today?”</li>
+              <li>“Show my last five rent payments.”</li>
+              <li>“Log ₹450 for petrol yesterday.”</li>
+            </ul>
+            <p className="text-[11px] text-muted-foreground">
+              Questions are answered from your ledger straight away. Anything that writes lands as a draft you approve here first.
+            </p>
           </div>
 
           <div className="rounded-xl border border-warning/25 bg-warning/[0.06] p-4">

@@ -14,6 +14,8 @@ import { Switch } from '@/components/ui/switch';
 import type { Account } from '../hooks/useQueries';
 
 import { LedgerViewDialog } from './LedgerViewDialog';
+import { PageGuide } from '@/components/system/PageGuide';
+import { PAGE_HELP } from '@/lib/page-help';
 import { LoansPanel } from './LoansPanel';
 
 export function DebtsTab() {
@@ -349,6 +351,8 @@ export function DebtsTab() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <PageGuide {...PAGE_HELP.debts} />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="glass-card border-0">

@@ -205,7 +205,7 @@ export function NetWorthTrendCard({ snapshots, rangeMonths }: { snapshots: NetWo
         <p className="stat-value text-[24px] text-foreground">{formatINR(last)}</p>
         <span className="mono text-[11px] text-muted-foreground">
           {formatINR(last - first, { signed: true, compact: true })}{' '}
-          {key === 'liabilities' ? 'change since' : 'added since'} {points[0]?.fullLabel ?? '—'}
+          {last - first >= 0 ? 'added since' : 'reduced since'} {points[0]?.fullLabel ?? '—'}
         </span>
         <div className="ml-auto flex items-center gap-1 rounded-full border border-border bg-surface p-0.5" role="group" aria-label="Trend series">
           {(Object.keys(trendMeta) as TrendKey[]).map((option) => (

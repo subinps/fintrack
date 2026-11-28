@@ -18,6 +18,8 @@ import { cn } from '@/lib/utils';
 import { Check, ChevronsUpDown, FileInput, Hash } from 'lucide-react';
 import { ImportTransactionDialog } from './ImportTransactionDialog';
 import { TagEditor } from './TagEditor';
+import { PageGuide } from '@/components/system/PageGuide';
+import { PAGE_HELP } from '@/lib/page-help';
 import { useCreateRuleFromTransaction } from '../hooks/useRecurring';
 import { format, isToday, isYesterday } from 'date-fns';
 
@@ -716,6 +718,8 @@ export function TransactionsTab({
           </Button>
         </div>
       </div>
+
+      <PageGuide {...PAGE_HELP.transactions} />
 
       {/* Filters */}
       <Card>

@@ -59,6 +59,8 @@ import {
   type RulePayload,
 } from '../hooks/useRecurring';
 import { toast } from 'sonner';
+import { PageGuide } from '@/components/system/PageGuide';
+import { PAGE_HELP } from '@/lib/page-help';
 
 const WEEKDAYS = [
   { value: 'MO', label: 'Monday' },
@@ -812,8 +814,8 @@ export function RecurringTab() {
   const [seed, setSeed] = useState<RecurringSuggestion | null>(null);
   const [historyRuleId, setHistoryRuleId] = useState<string | null>(null);
 
-  const rules = data?.data ?? [];
-  const upcoming = data?.upcoming ?? {};
+  const rules = useMemo(() => data?.data ?? [], [data?.data]);
+  const upcoming = useMemo(() => data?.upcoming ?? {}, [data?.upcoming]);
 
   const monthlyCommitment = useMemo(() => {
     return rules
@@ -894,6 +896,8 @@ export function RecurringTab() {
           New rule
         </Button>
       </div>
+
+      <PageGuide {...PAGE_HELP.recurring} />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
@@ -1000,8 +1004,8 @@ export function RecurringTab() {
                 .slice(0, 4)
                 .map((day) => (
                   <div key={`list-${day.key}`} className="flex items-start justify-between gap-2 border-t border-border/70 pt-2">
-                    <span className="mono text-[11px] text-muted-foreground">{nextDateLabel(day.key)}</span>
-                    <span className="truncate text-right text-[12px] text-foreground">{day.rules.map((rule) => rule.name).join(', ')}</span>
+                    <span className="mono shrink-0 whitespace-nowrap text-[11px] text-muted-foreground">{nextDateLabel(day.key)}</span>
+                    <span className="min-w-0 truncate text-right text-[12px] text-foreground">{day.rules.map((rule) => rule.name).join(', ')}</span>
                   </div>
                 ))}
             </div>

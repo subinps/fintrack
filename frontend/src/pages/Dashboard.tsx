@@ -10,7 +10,6 @@ import {
   Compass,
   CreditCard,
   Landmark,
-  LifeBuoy,
   LineChart,
   ListTree,
   LogOut,
@@ -54,7 +53,6 @@ const ReconcileTab = lazy(() => import('../components/ReconcileTab').then(module
 const ReportsTab = lazy(() => import('../components/ReportsTab').then(module => ({ default: module.ReportsTab })));
 const TaxTab = lazy(() => import('../components/TaxTab').then(module => ({ default: module.TaxTab })));
 const InsightsTab = lazy(() => import('../components/InsightsTab').then(module => ({ default: module.InsightsTab })));
-const HelpTab = lazy(() => import('../components/HelpTab').then(module => ({ default: module.HelpTab })));
 
 const navigation = [
   {
@@ -96,7 +94,6 @@ const navigation = [
   {
     group: 'Account',
     items: [
-      { id: 'help', label: 'Help', icon: LifeBuoy, hint: 'Eight guides in plain language' },
       { id: 'connect-ai', label: 'Connect to AI', icon: Sparkles, hint: 'Keys, drafts and activity' },
       { id: 'profile', label: 'Profile', icon: UserRound, hint: 'Data and preferences' },
     ],
@@ -162,7 +159,13 @@ function NavButton({
 
 export function Dashboard() {
   const { logout, user } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      return localStorage.getItem('fintrack:landing') || 'overview';
+    } catch {
+      return 'overview';
+    }
+  });
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -284,19 +287,23 @@ export function Dashboard() {
                 </SheetTrigger>
                 <SheetContent side="left" className="flex w-[19rem] flex-col overflow-y-auto border-border bg-card px-3 pb-6 pt-5">
                   <SheetTitle className="sr-only">Navigation</SheetTitle>
-                  <div className="mb-5 flex items-center px-1">
-                    <Brand />
-                  </div>
-                  {mobileNavOpen ? sidebar(true) : null}
-                  <div className="mt-auto space-y-3 border-t border-border pt-4">
-                    <div className="flex items-center gap-2 px-1">
-                      <ThemeToggle />
-                      <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setLogoutOpen(true)}>
-                        <LogOut className="h-4 w-4" />
-                        Sign out
-                      </Button>
-                    </div>
-                  </div>
+                  {mobileNavOpen ? (
+                    <>
+                      <div className="mb-5 flex items-center px-1">
+                        <Brand />
+                      </div>
+                      {sidebar(true)}
+                      <div className="mt-auto space-y-3 border-t border-border pt-4">
+                        <div className="flex items-center gap-2 px-1">
+                          <ThemeToggle />
+                          <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setLogoutOpen(true)}>
+                            <LogOut className="h-4 w-4" />
+                            Sign out
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
                 </SheetContent>
               </Sheet>
 
@@ -401,18 +408,17 @@ export function Dashboard() {
                   {activeTab === 'connect-ai' && <ConnectAiTab />}
                   {activeTab === 'income-expense' && <IncomeExpenseTab />}
                   {activeTab === 'profile' && <ProfileTab />}
-                  {activeTab === 'help' && <HelpTab />}
                 </Suspense>
               </motion.div>
             </div>
           </main>
 
           <footer className="border-t border-border px-4 py-4 sm:px-6 lg:px-8">
-            <div className="mx-auto flex max-w-[1200px] flex-col items-center justify-between gap-2 sm:flex-row">
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+            <div className="mx-auto flex max-w-[1200px] flex-col items-center justify-between gap-3 sm:flex-row sm:gap-2">
+              <span className="font-mono text-[10px] uppercase leading-5 tracking-[0.14em] text-muted-foreground">
                 FinTrack · Self-hosted ledger
               </span>
-              <span className="whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+              <span className="whitespace-nowrap font-mono text-[10px] uppercase leading-5 tracking-[0.14em] text-muted-foreground">
                 Data stays on your server
               </span>
             </div>
