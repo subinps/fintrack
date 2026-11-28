@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Account } from '../../src/hooks/useQueries';
 import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../lib/secureStore';
 
 interface AccountSelectorProps {
     accounts: Account[] | undefined;

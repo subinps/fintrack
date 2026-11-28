@@ -1,8 +1,10 @@
 import express from 'express';
-import { Account, TransactionSplit } from '@prisma/client';
+import { Account, Prisma, TransactionSplit } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import ExcelJS from 'exceljs';
+import { LedgerError, postTransaction } from '../services/ledger';
+import { emitLedgerEvent } from '../lib/events';
 
 const router = express.Router();
 
@@ -28,24 +30,49 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
 
         const priceMap = new Map(marketPrices.map(mp => [mp.symbol, mp]));
 
-        // Calculate balance for each account based on splits
-        const accountsWithBalance = await Promise.all(accounts.map(async (acc: Account) => {
-            const splits = await prisma.transactionSplit.findMany({
-                where: {
-                    accountId: acc.id,
-                    transaction: { status: 'COMPLETED' }
+        // Balances and unit legs for every account in two queries, not two per account.
+        const accountIds = accounts.map((acc: Account) => acc.id);
+        const completedSplitsWhere = {
+            accountId: { in: accountIds },
+            transaction: { status: 'COMPLETED' as const, deletedAt: null },
+        };
+
+        const [balanceRows, splitsByAccount] = await Promise.all([
+            prisma.transactionSplit.groupBy({
+                by: ['accountId'],
+                where: completedSplitsWhere,
+                _sum: { amount: true },
+            }),
+            prisma.transactionSplit.findMany({
+                where: completedSplitsWhere,
+                select: {
+                    id: true,
+                    accountId: true,
+                    amount: true,
+                    units: true,
+                    transaction: { select: { date: true, description: true } },
                 },
-            });
+                orderBy: [{ transaction: { date: 'asc' } }, { id: 'asc' }],
+            }),
+        ]);
 
-            const balance = splits.reduce((sum: bigint, split: TransactionSplit) => sum + BigInt(split.amount), BigInt(0));
+        const balanceMap = new Map<number, bigint>(
+            balanceRows.map((row) => [row.accountId, BigInt(row._sum.amount ?? BigInt(0))])
+        );
 
-            // Calculate Unit Balance and Average Buy Price
-            // Sort splits by date (we need to fetch transaction date)
-            const sortedSplits = await prisma.transactionSplit.findMany({
-                where: { accountId: acc.id },
-                include: { transaction: true },
-                orderBy: { transaction: { date: 'asc' } }
-            });
+        const splitsMap = new Map<number, typeof splitsByAccount>();
+        for (const split of splitsByAccount) {
+            const bucket = splitsMap.get(split.accountId);
+            if (bucket) {
+                bucket.push(split);
+            } else {
+                splitsMap.set(split.accountId, [split]);
+            }
+        }
+
+        const accountsWithBalance = accounts.map((acc: Account) => {
+            const balance = balanceMap.get(acc.id) ?? BigInt(0);
+            const sortedSplits = splitsMap.get(acc.id) ?? [];
 
             // Check for Opening Balance transaction
             const openingTx = sortedSplits.find(s => s.transaction.description.toLowerCase().includes('opening balance'));
@@ -102,7 +129,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
                 lastMarketPrice,
                 lastMarketUpdate
             };
-        }));
+        });
 
         res.json(accountsWithBalance);
     } catch (error) {
@@ -137,19 +164,27 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
             }
         }
 
-        const account = await prisma.account.create({
-            data: {
-                name,
-                type,
-                subType,
-                interestRate: interestRate ? parseFloat(interestRate) : null,
-                dueDate: dueDate ? new Date(dueDate) : null,
-                symbol,
-                units: units ? parseFloat(units) : null,
-                lastMarketPrice: lastMarketPrice ? parseFloat(lastMarketPrice) : null,
-                userId: req.user!.id,
-            },
-        });
+        let account;
+        try {
+            account = await prisma.account.create({
+                data: {
+                    name,
+                    type,
+                    subType,
+                    interestRate: interestRate ? parseFloat(interestRate) : null,
+                    dueDate: dueDate ? new Date(dueDate) : null,
+                    symbol,
+                    units: units ? parseFloat(units) : null,
+                    lastMarketPrice: lastMarketPrice ? parseFloat(lastMarketPrice) : null,
+                    userId: req.user!.id,
+                },
+            });
+        } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+                return res.status(409).json({ error: `An account named "${name}" of type ${type} already exists` });
+            }
+            throw error;
+        }
 
         // Handle Opening Balance
         if (openingBalance && parseFloat(openingBalance) !== 0) {
@@ -190,30 +225,34 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
                 split2Amount = amount; // Debit
             }
 
-            await prisma.transaction.create({
-                data: {
-                    description: 'Opening Balance',
-                    date: new Date(),
-                    userId: req.user!.id,
-                    splits: {
-                        create: [
-                            {
-                                accountId: account.id,
-                                amount: split1Amount,
-                                units: units ? parseFloat(units) : null // Add units here
-                            },
-                            { accountId: equityAccount.id, amount: split2Amount }
-                        ]
-                    }
-                }
+            await postTransaction({
+                userId: req.user!.id,
+                description: 'Opening Balance',
+                date: new Date(),
+                lines: [
+                    {
+                        accountId: account.id,
+                        amount: split1Amount,
+                        units: units ? parseFloat(units) : null // Add units here
+                    },
+                    { accountId: equityAccount.id, amount: split2Amount }
+                ],
             });
         }
+
+        emitLedgerEvent({ type: 'account.changed', userId: req.user!.id, accountIds: [account.id] });
 
         res.json({
             ...account,
             balance: openingBalance ? (Math.round(parseFloat(openingBalance) * 100)).toString() : '0',
         });
     } catch (error) {
+        if (error instanceof LedgerError) {
+            return res.status(error.statusCode).json({ error: error.message, code: error.code });
+        }
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+            return res.status(409).json({ error: 'An account with that name and type already exists' });
+        }
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
@@ -261,16 +300,22 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
         });
 
         // Fetch balance
-        const splits = await prisma.transactionSplit.findMany({
-            where: { accountId: account.id },
+        const balanceAggregate = await prisma.transactionSplit.aggregate({
+            where: { accountId: account.id, transaction: { status: 'COMPLETED', deletedAt: null } },
+            _sum: { amount: true },
         });
-        const balance = splits.reduce((sum: bigint, split: TransactionSplit) => sum + BigInt(split.amount), BigInt(0));
+        const balance = BigInt(balanceAggregate._sum.amount ?? BigInt(0));
+
+        emitLedgerEvent({ type: 'account.changed', userId: req.user!.id, accountIds: [account.id] });
 
         res.json({
             ...account,
             balance: balance.toString(),
         });
     } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+            return res.status(409).json({ error: 'An account with that name and type already exists' });
+        }
         console.error(error);
         res.status(500).json({ error: 'Server error' });
     }
@@ -293,6 +338,8 @@ router.patch('/:id/price', authenticateToken, async (req: AuthRequest, res) => {
                 lastMarketUpdate: new Date(),
             },
         });
+
+        emitLedgerEvent({ type: 'account.changed', userId: req.user!.id, accountIds: [account.id] });
 
         res.json(account);
     } catch (error) {
@@ -339,6 +386,8 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res) => {
             });
         });
 
+        emitLedgerEvent({ type: 'account.changed', userId, accountIds: [parseInt(id)] });
+
         res.json({ message: 'Account and associated transactions deleted' });
     } catch (error) {
         console.error('Delete account error:', error);
@@ -350,7 +399,7 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res) => {
 async function calculateLedgerData(accountId: number, startDate?: string, endDate?: string) {
     const whereClause: any = {
         accountId,
-        transaction: { status: 'COMPLETED' }
+        transaction: { status: 'COMPLETED', deletedAt: null }
     };
 
     // If we have a start date, we need to calculate opening balance up to that date
@@ -361,13 +410,18 @@ async function calculateLedgerData(accountId: number, startDate?: string, endDat
             where: {
                 accountId,
                 transaction: {
+                    status: 'COMPLETED',
+                    deletedAt: null,
                     date: { lt: new Date(startDate) }
                 }
-            }
+            },
+            select: { amount: true },
         });
         openingBalance = previousSplits.reduce((sum, split) => sum + BigInt(split.amount), BigInt(0));
 
         whereClause.transaction = {
+            status: 'COMPLETED',
+            deletedAt: null,
             date: { gte: new Date(startDate) }
         };
     }

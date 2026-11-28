@@ -1,8 +1,12 @@
-import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
 
-const db = SQLite.openDatabaseSync('fintrack.db');
+// expo-sqlite has no web build: the offline cache is native-only, and web
+// users are served by the API, so the helpers degrade to no-ops there.
+const isWeb = Platform.OS === 'web';
+const db: any = isWeb ? null : require('expo-sqlite').openDatabaseSync('fintrack.db');
 
 export const initDb = () => {
+  if (isWeb) return;
   // Create tables
   db.execSync(`
     PRAGMA journal_mode = WAL;
@@ -78,15 +82,15 @@ export const initDb = () => {
 
 // Helper to run queries
 export const runQuery = async (query: string, params: any[] = []) => {
-  return await db.getAllAsync(query, params);
+  return isWeb ? [] : await db.getAllAsync(query, params);
 };
 
 export const runRun = async (query: string, params: any[] = []) => {
-  return await db.runAsync(query, params);
+  return isWeb ? null : await db.runAsync(query, params);
 };
 
 export const getFirst = async (query: string, params: any[] = []) => {
-  return await db.getFirstAsync(query, params);
+  return isWeb ? null : await db.getFirstAsync(query, params);
 };
 
 export default db;

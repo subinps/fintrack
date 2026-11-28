@@ -1,7 +1,7 @@
 import { View, ActivityIndicator } from 'react-native';
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../src/lib/secureStore';
 import * as LocalAuthentication from 'expo-local-authentication';
 
 export default function IndexScreen() {

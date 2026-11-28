@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../lib/secureStore';
 
 export const parseSMSWithGemini = async (smsBody: string, apiKey: string, accountNames: string[] = []) => {
     // Legacy single parsing (kept for reference or fallback)

@@ -86,10 +86,11 @@ export function useDeleteAccount() {
 // Helper hooks to maintain compatibility or ease of use
 export function useGetBankAccounts() {
   const { data: accounts, ...rest } = useGetAccounts();
-  const bankAccounts = accounts?.filter(a =>
-    (a.type === 'ASSET' && ['savings', 'current', 'wallet', 'other'].includes((a.subType || '').toLowerCase())) ||
-    (a.type === 'LIABILITY' && (a.subType || '').toLowerCase() === 'credit-card')
-  ) || [];
+  const bankAccounts = accounts?.filter(a => {
+    const subType = (a.subType || '').toLowerCase();
+    const investmentTypes = ['stock', 'mutual-fund', 'crypto', 'bond', 'etf', 'other-investment'];
+    return (a.type === 'ASSET' && !investmentTypes.includes(subType)) || (a.type === 'LIABILITY' && subType === 'credit-card');
+  }) || [];
   return { data: bankAccounts, ...rest };
 }
 
@@ -220,6 +221,65 @@ export function useDeleteTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
+    },
+  });
+}
+
+export function useRestoreTransaction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await api.post(`/transactions/${id}/restore`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['trash'] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+    },
+  });
+}
+
+export function useGetTrash() {
+  return useQuery<{ data: Transaction[]; pagination: { total: number } }>({
+    queryKey: ['trash'],
+    queryFn: async () => {
+      const res = await api.get('/transactions', { params: { status: 'VOIDED', limit: 50 } });
+      return res.data;
+    },
+  });
+}
+
+export interface AppNotification {
+  id: number;
+  type: string;
+  title: string;
+  body: string;
+  href: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export function useGetNotifications() {
+  return useQuery<{ items: AppNotification[]; unread: number }>({
+    queryKey: ['notifications'],
+    queryFn: async () => {
+      const res = await api.get('/notifications', { params: { limit: 20 } });
+      return res.data;
+    },
+    refetchInterval: 60_000,
+  });
+}
+
+export function useMarkNotificationsRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await api.post('/notifications/read');
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 }

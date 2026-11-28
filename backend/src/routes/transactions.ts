@@ -5,6 +5,17 @@ import { authenticateToken, AuthRequest } from '../middleware/auth';
 import multer from 'multer';
 import * as XLSX from 'xlsx';
 import ExcelJS from 'exceljs';
+import {
+    approveTransaction,
+    assertOwnedAccounts,
+    LedgerError,
+    LedgerLine,
+    postTransaction,
+    restoreTransaction,
+    updateTransaction,
+    voidTransaction,
+} from '../services/ledger';
+import { serializeTransaction, serializeTransactions } from '../lib/serialize';
 
 // File upload config with size limit (5MB max)
 const upload = multer({
@@ -14,7 +25,42 @@ const upload = multer({
 
 const router = express.Router();
 
-// Get all transactions
+const sendLedgerError = (res: express.Response, error: unknown, fallbackMessage: string) => {
+    if (error instanceof LedgerError) {
+        return res.status(error.statusCode).json({ error: error.message, code: error.code });
+    }
+    console.error(error);
+    return res.status(500).json({ error: fallbackMessage });
+};
+
+const linesFromBody = (splits: any[]): LedgerLine[] =>
+    (splits ?? []).map((split: any) => ({
+        accountId: parseInt(split.accountId),
+        amount: BigInt(split.amount),
+        units: split.units ?? null,
+    }));
+
+
+const parseStatusFilter = (raw: unknown): Prisma.TransactionWhereInput['status'] => {
+    const value = typeof raw === 'string' && raw.length > 0 ? raw.toUpperCase() : 'COMPLETED';
+    if (value === 'ALL') return { in: ['DRAFT', 'COMPLETED'] };
+    if (value === 'COMPLETED' || value === 'DRAFT' || value === 'VOIDED') return value;
+    throw new LedgerError(400, 'INVALID_STATUS', 'status must be one of COMPLETED, DRAFT, VOIDED or ALL');
+};
+
+const encodeCursor = (transaction: { date: Date; id: number }) => `${transaction.date.getTime()}_${transaction.id}`;
+
+const decodeCursor = (raw: unknown): { date: Date; id: number } | null => {
+    if (typeof raw !== 'string' || !raw.includes('_')) return null;
+    const [time, id] = raw.split('_');
+    const millis = Number(time);
+    const parsedId = Number(id);
+    if (!Number.isFinite(millis) || !Number.isFinite(parsedId)) {
+        throw new LedgerError(400, 'INVALID_CURSOR', 'cursor is not valid');
+    }
+    return { date: new Date(millis), id: parsedId };
+};
+
 // Get all transactions
 router.get('/', authenticateToken, async (req: AuthRequest, res) => {
     try {
@@ -23,12 +69,20 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
         const limit = limitParam ? parseInt(limitParam as string) : 50;
 
         const take = limit === -1 ? undefined : limit;
-        const skip = limit === -1 ? undefined : (page - 1) * limit;
+        const cursor = decodeCursor(req.query.cursor);
+        const skip = cursor || !take ? undefined : (page - 1) * take;
 
+        const status = parseStatusFilter(req.query.status);
         const where: Prisma.TransactionWhereInput = {
             userId: req.user?.id,
-            status: (req.query.status as any) || 'COMPLETED'
+            status,
         };
+        if (cursor) {
+            where.OR = [
+                { date: { lt: cursor.date } },
+                { date: cursor.date, id: { lt: cursor.id } },
+            ];
+        }
 
         const [transactions, total] = await Promise.all([
             prisma.transaction.findMany({
@@ -40,35 +94,25 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
                         }
                     }
                 },
-                orderBy: {
-                    date: 'desc',
-                },
+                orderBy: [{ date: 'desc' }, { id: 'desc' }],
                 take,
                 skip,
             }),
-            prisma.transaction.count({ where })
+            cursor ? Promise.resolve(0) : prisma.transaction.count({ where: { userId: req.user?.id, status } })
         ]);
 
-        const serializedTransactions = transactions.map((tx: any) => ({
-            ...tx,
-            splits: tx.splits.map((split: any) => ({
-                ...split,
-                amount: split.amount.toString(),
-            })),
-        }));
-
         res.json({
-            data: serializedTransactions,
+            data: serializeTransactions(transactions),
             pagination: {
                 total,
                 page,
                 limit,
-                totalPages: Math.ceil(total / limit)
+                totalPages: take ? Math.ceil(total / take) : 1,
+                nextCursor: take && transactions.length === take ? encodeCursor(transactions[transactions.length - 1]) : null,
             }
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server error' });
+        sendLedgerError(res, error, 'Server error');
     }
 });
 
@@ -86,7 +130,11 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
                     include: {
                         account: true
                     }
-                }
+                },
+                history: {
+                    orderBy: { createdAt: 'desc' },
+                    select: { id: true, action: true, actor: true, createdAt: true },
+                },
             }
         });
 
@@ -94,16 +142,29 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
             return res.status(404).json({ error: 'Transaction not found' });
         }
 
-        res.json({
-            ...transaction,
-            splits: transaction.splits.map((split: any) => ({
-                ...split,
-                amount: split.amount.toString(),
-            })),
-        });
+        res.json(serializeTransaction(transaction));
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server error' });
+        sendLedgerError(res, error, 'Server error');
+    }
+});
+
+// Get the full edit/void history of one transaction
+router.get('/:id/history', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+        const transaction = await prisma.transaction.findFirst({
+            where: { id: parseInt(req.params.id), userId: req.user!.id },
+            select: { id: true },
+        });
+        if (!transaction) {
+            return res.status(404).json({ error: 'Transaction not found' });
+        }
+        const history = await prisma.transactionHistory.findMany({
+            where: { transactionId: transaction.id },
+            orderBy: { createdAt: 'desc' },
+        });
+        res.json(history);
+    } catch (error) {
+        sendLedgerError(res, error, 'Server error');
     }
 });
 
@@ -111,173 +172,125 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
 router.post('/', authenticateToken, async (req: AuthRequest, res) => {
     try {
         const { description, date, splits, status } = req.body;
-
-        // Validate splits sum to 0
-        const sum = splits.reduce((acc: bigint, split: any) => acc + BigInt(split.amount), BigInt(0));
-        if (sum !== BigInt(0)) {
-            return res.status(400).json({ error: 'Transaction splits must sum to zero' });
+        if (!Array.isArray(splits) || splits.length < 2) {
+            return res.status(400).json({ error: 'A transaction needs at least two splits' });
         }
 
-        // Security: Validate Account Ownership
-        const accountIds = [...new Set(splits.map((s: any) => parseInt(s.accountId)))] as number[];
-        const count = await prisma.account.count({
-            where: {
-                id: { in: accountIds },
-                userId: req.user!.id
-            }
+        const transaction = await postTransaction({
+            userId: req.user!.id,
+            description,
+            date,
+            lines: linesFromBody(splits),
+            status: status === 'DRAFT' ? 'DRAFT' : 'COMPLETED',
         });
 
-        if (count !== accountIds.length) {
-            return res.status(403).json({ error: 'Access denied. You do not own one or more accounts involved in this transaction.' });
-        }
-
-        const transaction: any = await prisma.transaction.create({
-            data: {
-                description,
-                date: date ? new Date(date) : new Date(),
-                userId: req.user!.id,
-                splits: {
-                    create: splits.map((split: any) => ({
-                        amount: BigInt(split.amount),
-                        accountId: parseInt(split.accountId),
-                        units: split.units ? split.units : null,
-                    })),
-                },
-                status: status || 'COMPLETED',
-            } as any,
-            include: {
-                splits: true,
-            },
-        });
-
-        res.json({
-            ...transaction,
-            splits: transaction.splits.map((split: any) => ({
-                ...split,
-                amount: split.amount.toString(),
-            })),
-        });
+        res.json(serializeTransaction(transaction));
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server error' });
+        sendLedgerError(res, error, 'Server error');
     }
 });
 
 // Update transaction
 router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
     try {
-        const { id } = req.params;
         const { description, date, splits, status } = req.body;
+        const lines = Array.isArray(splits) ? linesFromBody(splits) : undefined;
 
-        console.log(`[PUT /transactions/${id}] Update request:`, { description, date, status, splitsCount: splits?.length });
-
-        // Validate splits sum to 0
-        const sum = splits.reduce((acc: bigint, split: any) => acc + BigInt(split.amount), BigInt(0));
-        if (sum !== BigInt(0)) {
-            return res.status(400).json({ error: 'Transaction splits must sum to zero' });
-        }
-
-        // Security: Validate Account Ownership
-        const accountIds = [...new Set(splits.map((s: any) => parseInt(s.accountId)))] as number[];
-        const count = await prisma.account.count({
-            where: {
-                id: { in: accountIds },
-                userId: req.user!.id
-            }
+        const updated = await updateTransaction({
+            userId: req.user!.id,
+            id: parseInt(req.params.id),
+            description,
+            date,
+            lines,
+            status: status === 'DRAFT' || status === 'COMPLETED' ? status : undefined,
         });
 
-        if (count !== accountIds.length) {
-            return res.status(403).json({ error: 'Access denied. You do not own one or more accounts involved in this transaction.' });
-        }
-
-        // Use transaction for atomicity
-        const updatedTransaction = await prisma.$transaction(async (prisma: Prisma.TransactionClient) => {
-            // 1. Update Transaction details
-            const tx = await prisma.transaction.update({
-                where: { id: parseInt(id), userId: req.user!.id },
-                data: {
-                    description,
-                    date: date ? new Date(date) : undefined,
-                    status: status || undefined, // Allow updating status
-                },
-            });
-
-            // 2. Delete existing splits
-            await prisma.transactionSplit.deleteMany({
-                where: { transactionId: tx.id },
-            });
-
-            // 3. Create new splits
-            await prisma.transactionSplit.createMany({
-                data: splits.map((split: any) => ({
-                    transactionId: tx.id,
-                    amount: BigInt(split.amount),
-                    accountId: parseInt(split.accountId),
-                    units: split.units ? split.units : null,
-                })),
-            });
-
-            return prisma.transaction.findUnique({
-                where: { id: tx.id },
-                include: { splits: { include: { account: true } } },
-            });
+        const withAccounts = await prisma.transaction.findUniqueOrThrow({
+            where: { id: updated.id },
+            include: { splits: { include: { account: true } }, history: { orderBy: { createdAt: 'desc' }, take: 5 } },
         });
 
-        res.json({
-            ...updatedTransaction,
-            splits: updatedTransaction!.splits.map((split: any) => ({
-                ...split,
-                amount: split.amount.toString(),
-            })),
-        });
+        res.json(serializeTransaction(withAccounts));
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server error' });
+        sendLedgerError(res, error, 'Server error');
     }
 });
 
-// Delete transaction
+// Delete transaction (soft delete: the row is kept as VOIDED and can be restored)
 router.delete('/:id', authenticateToken, async (req: AuthRequest, res) => {
     try {
-        const { id } = req.params;
-        await prisma.transaction.delete({
-            where: { id: parseInt(id), userId: req.user!.id },
+        const reason = typeof req.body?.reason === 'string' ? req.body.reason : null;
+        const transaction = await voidTransaction(parseInt(req.params.id), req.user!.id, reason);
+        res.json({
+            message: 'Transaction deleted',
+            transaction: serializeTransaction(transaction),
         });
-        res.json({ message: 'Transaction deleted' });
     } catch (error) {
-        res.status(500).json({ error: 'Server error' });
+        sendLedgerError(res, error, 'Server error');
+    }
+});
+
+// Restore a voided transaction
+router.post('/:id/restore', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+        const transaction = await restoreTransaction(parseInt(req.params.id), req.user!.id);
+        res.json(serializeTransaction(transaction));
+    } catch (error) {
+        sendLedgerError(res, error, 'Server error');
+    }
+});
+
+// Bulk void / approve / restore. Each item is validated on its own so one bad id
+// does not discard the rest of the batch.
+router.post('/bulk', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+        const { ids, action } = req.body ?? {};
+        if (!Array.isArray(ids) || ids.length === 0 || ids.length > 100) {
+            return res.status(400).json({ error: 'ids must be an array of 1 to 100 transaction ids' });
+        }
+        if (!['void', 'approve', 'restore'].includes(action)) {
+            return res.status(400).json({ error: "action must be 'void', 'approve' or 'restore'" });
+        }
+
+        const results: { id: number; status: string; error?: string }[] = [];
+        for (const rawId of [...new Set(ids.map((value: unknown) => parseInt(String(value), 10)))]) {
+            if (!Number.isFinite(rawId)) {
+                results.push({ id: rawId, status: 'error', error: 'Invalid id' });
+                continue;
+            }
+            try {
+                if (action === 'void') {
+                    const transaction = await voidTransaction(rawId, req.user!.id, typeof req.body.reason === 'string' ? req.body.reason : null);
+                    results.push({ id: rawId, status: transaction.status });
+                } else if (action === 'approve') {
+                    const transaction = await approveTransaction(rawId, req.user!.id);
+                    results.push({ id: rawId, status: transaction.status });
+                } else {
+                    const transaction = await restoreTransaction(rawId, req.user!.id);
+                    results.push({ id: rawId, status: transaction.status });
+                }
+            } catch (error) {
+                results.push({ id: rawId, status: 'error', error: error instanceof LedgerError ? error.message : 'Server error' });
+            }
+        }
+
+        res.json({ results });
+    } catch (error) {
+        sendLedgerError(res, error, 'Server error');
     }
 });
 
 // Approve Draft Transaction
 router.put('/:id/approve', authenticateToken, async (req: AuthRequest, res) => {
     try {
-        const { id } = req.params;
-
-        const existing = await prisma.transaction.findFirst({
-            where: { id: parseInt(id), userId: req.user!.id }
+        const approved = await approveTransaction(parseInt(req.params.id), req.user!.id);
+        const transaction = await prisma.transaction.findUniqueOrThrow({
+            where: { id: approved.id },
+            include: { splits: { include: { account: true } } },
         });
-
-        if (!existing) {
-            return res.status(404).json({ error: 'Transaction not found' });
-        }
-
-        const transaction: any = await prisma.transaction.update({
-            where: { id: parseInt(id) },
-            data: { status: 'COMPLETED' } as any,
-            include: { splits: { include: { account: true } } }
-        });
-
-        res.json({
-            ...transaction,
-            splits: transaction.splits.map((split: any) => ({
-                ...split,
-                amount: split.amount.toString(),
-            })),
-        });
+        res.json(serializeTransaction(transaction));
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server error' });
+        sendLedgerError(res, error, 'Server error');
     }
 });
 
@@ -433,19 +446,34 @@ router.post('/import', authenticateToken, upload.single('file'), async (req: Aut
                 let categoryAccount = await tx.account.findFirst({
                     where: {
                         userId: req.user!.id,
-                        name: { equals: categoryName, mode: 'insensitive' }
+                        name: { equals: categoryName, mode: 'insensitive' },
+                        type,
                     }
                 });
 
                 if (!categoryAccount) {
-                    categoryAccount = await tx.account.create({
-                        data: {
-                            name: categoryName,
-                            type: type,
-                            subType: 'category',
-                            userId: req.user!.id
+                    try {
+                        categoryAccount = await tx.account.create({
+                            data: {
+                                name: categoryName,
+                                type: type,
+                                subType: 'category',
+                                userId: req.user!.id
+                            }
+                        });
+                    } catch (error) {
+                        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+                            categoryAccount = await tx.account.findFirstOrThrow({
+                                where: {
+                                    userId: req.user!.id,
+                                    name: { equals: categoryName, mode: 'insensitive' },
+                                    type,
+                                }
+                            });
+                        } else {
+                            throw error;
                         }
-                    });
+                    }
                 }
 
                 // Create Transaction
@@ -462,26 +490,27 @@ router.post('/import', authenticateToken, upload.single('file'), async (req: Aut
                 // Category Account: -100 (Credit)
 
                 const transactionAmount = Math.round(amount * 100); // Convert to cents/paisa
+                if (transactionAmount === 0) {
+                    continue; // Skip rows that round to nothing
+                }
 
-                const newTx = await tx.transaction.create({
-                    data: {
-                        description,
-                        date,
-                        userId: req.user!.id,
-                        splits: {
-                            create: [
-                                {
-                                    accountId: parseInt(accountId),
-                                    amount: BigInt(transactionAmount), // Source impact matches the sign in Excel
-                                },
-                                {
-                                    accountId: categoryAccount.id,
-                                    amount: BigInt(-transactionAmount), // Counter entry
-                                    units: units // Units apply to the category/investment account
-                                }
-                            ]
-                        }
-                    }
+                const newTx = await postTransaction({
+                    client: tx,
+                    userId: req.user!.id,
+                    description,
+                    date,
+                    source: 'IMPORT',
+                    lines: [
+                        {
+                            accountId: parseInt(accountId),
+                            amount: BigInt(transactionAmount), // Source impact matches the sign in Excel
+                        },
+                        {
+                            accountId: categoryAccount.id,
+                            amount: BigInt(-transactionAmount), // Counter entry
+                            units: units ?? null, // Units apply to the category/investment account
+                        },
+                    ],
                 });
                 importedTransactions.push(newTx);
             }

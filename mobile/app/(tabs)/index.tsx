@@ -1,19 +1,25 @@
-import { View, Text, ScrollView, RefreshControl, Dimensions, TouchableOpacity, Modal } from 'react-native';
-import { useGetAccounts, useGetNetWorthHistory } from '../../src/hooks/useQueries';
+import { View, Text, ScrollView, RefreshControl, Dimensions, TouchableOpacity, Modal, Platform } from 'react-native';
+import { useGetAccounts, useGetNetWorthHistory, useGetNotifications } from '../../src/hooks/useQueries';
 import { useCachedMarketData } from '../../src/hooks/useMarketData';
 import { useState, useMemo } from 'react';
 import { LineChart, PieChart } from 'react-native-gifted-charts';
+import NetWorthAreaChart from '../../src/components/NetWorthAreaChart';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
+import { usePalette } from '../../src/lib/palette';
+import Reveal from '../../src/components/Reveal';
 
 export default function OverviewScreen() {
     const router = useRouter();
     const { data: accounts, isLoading, refetch } = useGetAccounts();
+    const { data: notifications } = useGetNotifications();
+    const unread = notifications?.unread ?? 0;
     const { data: netWorthHistory, refetch: refetchHistory } = useGetNetWorthHistory();
     const { getPrice } = useCachedMarketData();
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
+    const palette = usePalette();
     const [refreshing, setRefreshing] = useState(false);
     const screenWidth = Dimensions.get('window').width;
 
@@ -66,7 +72,7 @@ export default function OverviewScreen() {
         return sorted.map(item => ({
             value: item.netWorth / 100,
             label: new Date(item.date).getDate().toString(),
-            labelTextStyle: { color: isDark ? '#94a3b8' : '#64748b', fontSize: 10 },
+            labelTextStyle: { color: palette.onSurfaceVariant, fontSize: 10 },
         }));
     }, [netWorthHistory]);
 
@@ -109,10 +115,28 @@ export default function OverviewScreen() {
     return (
         <ScrollView
             className="flex-1 bg-background"
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.primary} />}
         >
+            <Reveal>
             <View className="px-4 pt-12 pb-6">
-                <Text className="text-3xl font-bold text-onSurface mb-6">Overview</Text>
+                <View className="flex-row items-center justify-between mb-6">
+                    <View>
+                        <Text className="text-onSurfaceVariant text-[11px] font-semibold uppercase tracking-[2px]">FinTrack</Text>
+                        <Text className="text-3xl font-bold text-onSurface tracking-tight">Overview</Text>
+                    </View>
+                    <TouchableOpacity
+                        onPress={() => router.push('/notifications')}
+                        className="w-11 h-11 rounded-full bg-surface border border-outline items-center justify-center"
+                        accessibilityLabel={unread > 0 ? `${unread} unread notifications` : 'Notifications'}
+                    >
+                        <Ionicons name="notifications-outline" size={20} color={palette.onSurface} />
+                        {unread > 0 && (
+                            <View className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-error items-center justify-center border-2 border-background">
+                                <Text className="text-white text-[9px] font-bold">{unread > 9 ? '9+' : unread}</Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                </View>
 
                 {/* 4 Cards Grid */}
                 <View className="flex-row flex-wrap gap-3 mb-6">
@@ -123,7 +147,7 @@ export default function OverviewScreen() {
                     >
                         <View className="flex-row justify-between items-start mb-2">
                             <Text className="text-onSurfaceVariant text-xs font-medium uppercase">Net Worth</Text>
-                            <Ionicons name="wallet-outline" size={16} color="#6366f1" />
+                            <Ionicons name="wallet-outline" size={16} color={palette.primary} />
                         </View>
                         <Text className="text-onSurface text-lg font-bold mb-1" numberOfLines={1} adjustsFontSizeToFit>
                             {formatCurrency(netWorthMarket)}
@@ -140,9 +164,9 @@ export default function OverviewScreen() {
                     >
                         <View className="flex-row justify-between items-start mb-2">
                             <Text className="text-onSurfaceVariant text-xs font-medium uppercase">Total Assets</Text>
-                            <Ionicons name="trending-up-outline" size={16} color="#10b981" />
+                            <Ionicons name="trending-up-outline" size={16} color={palette.success} />
                         </View>
-                        <Text className="text-secondary text-lg font-bold mb-1" numberOfLines={1} adjustsFontSizeToFit>
+                        <Text className="text-success text-lg font-bold mb-1" numberOfLines={1} adjustsFontSizeToFit>
                             {formatCurrency(totalAssetsMarket)}
                         </Text>
                         <Text className="text-onSurfaceVariant text-[10px]">
@@ -157,7 +181,7 @@ export default function OverviewScreen() {
                     >
                         <View className="flex-row justify-between items-start mb-2">
                             <Text className="text-onSurfaceVariant text-xs font-medium uppercase">Liabilities</Text>
-                            <Ionicons name="arrow-down-circle-outline" size={16} color="#ef4444" />
+                            <Ionicons name="arrow-down-circle-outline" size={16} color={palette.error} />
                         </View>
                         <Text className="text-error text-lg font-bold mb-1" numberOfLines={1} adjustsFontSizeToFit>
                             {formatCurrency(totalLiabilities)}
@@ -172,9 +196,9 @@ export default function OverviewScreen() {
                     >
                         <View className="flex-row justify-between items-start mb-2">
                             <Text className="text-onSurfaceVariant text-xs font-medium uppercase">Liquid Cash</Text>
-                            <Ionicons name="cash-outline" size={16} color="#60a5fa" />
+                            <Ionicons name="cash-outline" size={16} color={palette.info} />
                         </View>
-                        <Text className="text-blue-400 text-lg font-bold mb-1" numberOfLines={1} adjustsFontSizeToFit>
+                        <Text className="text-info text-lg font-bold mb-1" numberOfLines={1} adjustsFontSizeToFit>
                             {formatCurrency(totalCash)}
                         </Text>
                         <Text className="text-onSurfaceVariant text-[10px]">Available to spend</Text>
@@ -189,7 +213,7 @@ export default function OverviewScreen() {
                             <PieChart
                                 data={pieData}
                                 donut
-                                textColor="gray"
+                                textColor={palette.onSurfaceVariant}
                                 radius={100}
                                 innerRadius={60}
                                 textSize={10}
@@ -219,39 +243,47 @@ export default function OverviewScreen() {
                         <View className="flex-row justify-between items-center mb-4 ml-2 mr-2">
                             <Text className="text-onSurface text-lg font-semibold">Net Worth Growth</Text>
                             <TouchableOpacity onPress={() => router.push('/analytics')}>
-                                <Text className="text-primary-400 text-sm font-bold">View Analytics</Text>
+                                <Text className="text-primary text-sm font-bold">View Analytics</Text>
                             </TouchableOpacity>
                         </View>
                         <View style={{ marginLeft: -20 }}>
+                            {Platform.OS === 'web' ? (
+                                <NetWorthAreaChart
+                                    data={chartData}
+                                    width={screenWidth - 40}
+                                    height={212}
+                                    isDark={isDark}
+                                />
+                            ) : (
                             <LineChart
                                 data={chartData}
                                 areaChart
                                 curved
-                                color="#6366f1"
-                                startFillColor="rgba(99, 102, 241, 0.3)"
-                                endFillColor="rgba(99, 102, 241, 0.01)"
+                                color={palette.primary}
+                                startFillColor={isDark ? 'rgba(88,181,150,0.30)' : 'rgba(31,110,90,0.18)'}
+                                endFillColor="rgba(79,70,229,0.01)"
                                 startOpacity={0.9}
                                 endOpacity={0.2}
                                 initialSpacing={20}
                                 noOfSections={4}
-                                yAxisTextStyle={{ color: '#94a3b8', fontSize: 10 }}
-                                xAxisLabelTextStyle={{ color: '#94a3b8', fontSize: 10 }}
-                                rulesColor="rgba(255,255,255,0.1)"
+                                yAxisTextStyle={{ color: palette.onSurfaceVariant, fontSize: 10 }}
+                                xAxisLabelTextStyle={{ color: palette.onSurfaceVariant, fontSize: 10 }}
+                                rulesColor={isDark ? 'rgba(255,255,255,0.10)' : 'rgba(15,23,42,0.10)'}
                                 rulesType="solid"
                                 hideRules={false}
                                 yAxisColor="transparent"
                                 xAxisColor="transparent"
                                 thickness={3}
                                 hideDataPoints={false}
-                                dataPointsColor="#6366f1"
+                                dataPointsColor={palette.primary}
                                 dataPointsRadius={4}
                                 width={screenWidth - 80}
                                 height={200}
                                 pointerConfig={{
                                     pointerStripHeight: 160,
-                                    pointerStripColor: '#94a3b8',
+                                    pointerStripColor: palette.onSurfaceVariant,
                                     pointerStripWidth: 2,
-                                    pointerColor: '#94a3b8',
+                                    pointerColor: palette.primary,
                                     radius: 6,
                                     pointerLabelWidth: 100,
                                     pointerLabelHeight: 90,
@@ -280,6 +312,7 @@ export default function OverviewScreen() {
                                     },
                                 }}
                             />
+                            )}
                         </View>
                     </View>
                 ) : (
@@ -302,20 +335,20 @@ export default function OverviewScreen() {
                         <View className="flex-row justify-between items-center mb-6">
                             <Text className="text-onSurface text-xl font-bold">Net Worth Breakdown</Text>
                             <TouchableOpacity onPress={() => setShowNetWorthDetails(false)}>
-                                <Ionicons name="close" size={24} color="#a1a1aa" />
+                                <Ionicons name="close" size={24} color={palette.onSurfaceVariant} />
                             </TouchableOpacity>
                         </View>
                         <View className="space-y-4">
                             <View className="flex-row justify-between items-center p-4 bg-background/50 rounded-xl border border-outline">
                                 <View>
                                     <Text className="text-onSurfaceVariant text-sm">Total Assets</Text>
-                                    <Text className="text-secondary text-xl font-bold">{formatCurrency(totalAssetsMarket)}</Text>
+                                    <Text className="text-success text-xl font-bold">{formatCurrency(totalAssetsMarket)}</Text>
                                 </View>
                                 <TouchableOpacity
                                     className="bg-surfaceVariant p-2 rounded-full"
                                     onPress={() => { setShowNetWorthDetails(false); setShowAssetDetails(true); }}
                                 >
-                                    <Ionicons name="arrow-forward" size={20} color="#a1a1aa" />
+                                    <Ionicons name="arrow-forward" size={20} color={palette.onSurfaceVariant} />
                                 </TouchableOpacity>
                             </View>
                             <View className="flex-row justify-between items-center p-4 bg-background/50 rounded-xl border border-outline">
@@ -327,7 +360,7 @@ export default function OverviewScreen() {
                                     className="bg-surfaceVariant p-2 rounded-full"
                                     onPress={() => { setShowNetWorthDetails(false); router.push({ pathname: '/chart-of-accounts', params: { initialSearch: 'LIABILITY' } }); }}
                                 >
-                                    <Ionicons name="arrow-forward" size={20} color="#a1a1aa" />
+                                    <Ionicons name="arrow-forward" size={20} color={palette.onSurfaceVariant} />
                                 </TouchableOpacity>
                             </View>
                             <View className="pt-4 border-t border-outline flex-row justify-between items-center">
@@ -351,40 +384,41 @@ export default function OverviewScreen() {
                         <View className="flex-row justify-between items-center mb-6">
                             <Text className="text-onSurface text-xl font-bold">Assets Breakdown</Text>
                             <TouchableOpacity onPress={() => setShowAssetDetails(false)}>
-                                <Ionicons name="close" size={24} color="#a1a1aa" />
+                                <Ionicons name="close" size={24} color={palette.onSurfaceVariant} />
                             </TouchableOpacity>
                         </View>
                         <View className="space-y-4">
                             <View className="flex-row justify-between items-center p-4 bg-background/50 rounded-xl border border-outline">
                                 <View>
                                     <Text className="text-onSurfaceVariant text-sm">Bank & Cash</Text>
-                                    <Text className="text-blue-400 text-xl font-bold">{formatCurrency(totalCash)}</Text>
+                                    <Text className="text-info text-xl font-bold">{formatCurrency(totalCash)}</Text>
                                     <Text className="text-onSurfaceVariant text-xs">Liquid funds</Text>
                                 </View>
                                 <TouchableOpacity
                                     className="bg-surfaceVariant p-2 rounded-full"
                                     onPress={() => { setShowAssetDetails(false); router.push({ pathname: '/chart-of-accounts', params: { initialSearch: 'ASSET' } }); }}
                                 >
-                                    <Ionicons name="arrow-forward" size={20} color="#a1a1aa" />
+                                    <Ionicons name="arrow-forward" size={20} color={palette.onSurfaceVariant} />
                                 </TouchableOpacity>
                             </View>
                             <View className="flex-row justify-between items-center p-4 bg-background/50 rounded-xl border border-outline">
                                 <View>
                                     <Text className="text-onSurfaceVariant text-sm">Investments</Text>
-                                    <Text className="text-secondary text-xl font-bold">{formatCurrency(totalInvestmentsMarket)}</Text>
+                                    <Text className="text-success text-xl font-bold">{formatCurrency(totalInvestmentsMarket)}</Text>
                                     <Text className="text-onSurfaceVariant text-xs">Stocks, Mutual Funds</Text>
                                 </View>
                                 <TouchableOpacity
                                     className="bg-surfaceVariant p-2 rounded-full"
                                     onPress={() => { setShowAssetDetails(false); router.push('/investments'); }}
                                 >
-                                    <Ionicons name="arrow-forward" size={20} color="#a1a1aa" />
+                                    <Ionicons name="arrow-forward" size={20} color={palette.onSurfaceVariant} />
                                 </TouchableOpacity>
                             </View>
                         </View>
                     </View>
                 </View>
             </Modal>
+            </Reveal>
         </ScrollView>
     );
 }

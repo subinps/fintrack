@@ -50,10 +50,7 @@ export const useNotificationListener = (onNotificationReceived: (notification: a
     };
 
     useEffect(() => {
-        if (RNAndroidNotificationListener) {
-        } else {
-            console.error("[NotificationListener] Module RNAndroidNotificationListener is NULL");
-        }
+        if (Platform.OS !== 'android') return;
         checkPermission();
     }, []);
 

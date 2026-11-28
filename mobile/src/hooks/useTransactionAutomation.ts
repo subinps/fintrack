@@ -4,7 +4,7 @@ import { parseSMSWithGemini, getGeminiApiKey } from '../services/gemini';
 import { useAddTransaction, useGetAccounts, useAddAccount } from './useQueries';
 import { useNotificationListener } from './useNotificationListener';
 import * as Notifications from 'expo-notifications';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../lib/secureStore';
 import { AutomationHistoryService } from '../services/automationHistory';
 
 export const useTransactionAutomation = () => {

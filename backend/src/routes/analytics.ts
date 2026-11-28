@@ -1,112 +1,29 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { snapshotNetWorth } from '../services/networth';
 
 const router = Router();
-
-// Helper to get start of day in UTC
-const getStartOfDay = (date: Date) => {
-    const start = new Date(date);
-    start.setUTCHours(0, 0, 0, 0);
-    return start;
-};
 
 router.get('/net-worth-history', authenticateToken, async (req: AuthRequest, res) => {
     try {
         const userId = req.user!.id;
-        const today = new Date();
-        const startOfToday = getStartOfDay(today);
 
-        // 1. Calculate Current Net Worth
-        const accounts = await prisma.account.findMany({
-            where: { userId },
-            include: {
-                splits: {
-                    where: {
-                        transaction: { status: 'COMPLETED' }
-                    }
-                }
-            },
-        });
+        // Today's snapshot is recomputed and upserted, then the full series is returned.
+        await snapshotNetWorth(userId);
 
-        let totalAssets = 0;
-        let totalLiabilities = 0;
-
-        for (const account of accounts) {
-            // Calculate balance from splits
-            const balanceBigInt = account.splits.reduce((sum, split) => sum + BigInt(split.amount), BigInt(0));
-            let value = Number(balanceBigInt); // Default to balance (cents)
-
-            // If it's an investment with a market price, use that
-            if (['ASSET'].includes(account.type) &&
-                ['stock', 'mutual-fund', 'crypto', 'bond', 'etf', 'other-investment'].includes(account.subType || '') &&
-                account.units) {
-
-                // Priority: 1. Stored Market Price, 2. Balance (Cost Basis)
-                if (account.lastMarketPrice) {
-                    value = Number(account.lastMarketPrice) * account.units * 100;
-                }
-            }
-
-            if (account.type === 'ASSET') {
-                totalAssets += value;
-            } else if (account.type === 'LIABILITY') {
-                totalLiabilities += Math.abs(value); // Liabilities are stored as negative or positive, treat magnitude as debt
-            }
-        }
-
-        const currentNetWorth = totalAssets - totalLiabilities;
-
-        // 2. Check if snapshot exists for today
-        const existingSnapshot = await prisma.netWorthSnapshot.findFirst({
-            where: {
-                userId,
-                date: {
-                    gte: startOfToday,
-                    lt: new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000),
-                },
-            },
-        });
-
-        // 3. Create/Update Snapshot
-        if (existingSnapshot) {
-            // Optional: Update existing snapshot with latest value for today
-            await prisma.netWorthSnapshot.update({
-                where: { id: existingSnapshot.id },
-                data: {
-                    netWorth: currentNetWorth,
-                    assets: totalAssets,
-                    liabilities: totalLiabilities,
-                },
-            });
-        } else {
-            await prisma.netWorthSnapshot.create({
-                data: {
-                    userId,
-                    date: startOfToday,
-                    netWorth: currentNetWorth,
-                    assets: totalAssets,
-                    liabilities: totalLiabilities,
-                },
-            });
-        }
-
-        // 4. Fetch History
         const history = await prisma.netWorthSnapshot.findMany({
             where: { userId },
             orderBy: { date: 'asc' },
         });
 
-        // Convert Decimal to Number for JSON response
-        const formattedHistory = history.map(record => ({
+        // Convert Decimal to Number for the JSON response
+        res.json(history.map(record => ({
             date: record.date,
             netWorth: Number(record.netWorth),
             assets: Number(record.assets),
             liabilities: Number(record.liabilities),
-        }));
-
-        res.json(formattedHistory);
-
+        })));
     } catch (error) {
         console.error('Error fetching net worth history:', error);
         res.status(500).json({ error: 'Failed to fetch net worth history' });

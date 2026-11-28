@@ -1,8 +1,11 @@
 import axios, { InternalAxiosRequestConfig, AxiosError } from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+import * as SecureStore from './secureStore';
 import { mockApi } from '../services/mockApi';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+// Web runs behind Metro's same-origin /api proxy; native talks to the host directly.
+const DEFAULT_API_URL = Platform.OS === 'web' ? '/api' : 'http://localhost:3000/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || DEFAULT_API_URL;
 
 const api = axios.create({
     baseURL: API_URL,

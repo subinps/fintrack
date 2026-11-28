@@ -29,9 +29,11 @@ const safeError = (error: unknown): { error: string } => {
 };
 
 // Strict Rate Limiter for Auth Routes
+// Only failed attempts count, so normal sign-ins never lock a shared IP out.
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // Limit each IP to 10 requests per windowMs
+    max: 20, // Limit each IP to 20 failed attempts per windowMs
+    skipSuccessfulRequests: true,
     message: 'Too many login/register attempts from this IP, please try again after 15 minutes',
     standardHeaders: true,
     legacyHeaders: false,
@@ -47,6 +49,24 @@ const transporter = nodemailer.createTransport({
         pass: process.env.SMTP_PASS,
     },
 });
+
+// The browser keeps its refresh token in this HttpOnly cookie and never sees it.
+// Native clients keep using the Bearer refresh token in the response body.
+const REFRESH_COOKIE = 'fintrack_refresh';
+const REFRESH_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const refreshCookieOptions = () => ({
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax' as const,
+    path: '/api/auth',
+    maxAge: REFRESH_COOKIE_MAX_AGE_MS,
+});
+
+const readRefreshToken = (req: express.Request): string | undefined => {
+    const fromCookie = (req as express.Request & { cookies?: Record<string, string> }).cookies?.[REFRESH_COOKIE];
+    const fromBody = typeof req.body?.refreshToken === 'string' ? req.body.refreshToken : undefined;
+    return fromCookie || fromBody;
+};
 
 // Register
 router.post('/register', authLimiter, async (req, res) => {
@@ -92,12 +112,17 @@ router.post('/register', authLimiter, async (req, res) => {
             verificationLink
         );
 
-        const info = await transporter.sendMail({
-            from: `"FinTrack" <${process.env.SMTP_USER}>`,
-            to: email,
-            subject: 'Verify your email address',
-            html: emailHtml,
-    });
+        // A mail outage must not undo a successful sign-up: the user can resend later.
+        try {
+            await transporter.sendMail({
+                from: `"FinTrack" <${process.env.SMTP_USER}>`,
+                to: email,
+                subject: 'Verify your email address',
+                html: emailHtml,
+            });
+        } catch (mailError) {
+            console.error('Verification email failed:', mailError);
+        }
 
 
         res.status(201).json({
@@ -197,6 +222,8 @@ router.post('/login', authLimiter, async (req, res) => {
             }
     });
 
+        res.cookie(REFRESH_COOKIE, refreshToken, refreshCookieOptions());
+
         res.json({
             accessToken,
             refreshToken,
@@ -249,7 +276,9 @@ router.post('/resend-verification', authLimiter, async (req, res) => {
             to: email,
             subject: 'Verify your email address',
             html: emailHtml,
-    });
+        }).catch((mailError) => {
+            console.error('Resend verification email failed:', mailError);
+        });
 
         res.json({ message: 'Verification email sent' });
     } catch (error) {
@@ -362,15 +391,17 @@ router.put('/me', authenticateToken, async (req: AuthRequest, res) => {
 // Logout (Current Session) - requires refresh token to identify session
 router.post('/logout', authenticateToken, async (req: AuthRequest, res) => {
     try {
-        const { refreshToken } = req.body;
+        const presented = [req.body?.refreshToken, readRefreshToken(req)].filter(
+            (value): value is string => typeof value === 'string' && value.length > 0
+        );
 
-        if (refreshToken) {
-        const hashedToken = hashToken(refreshToken);
-        await prisma.session.deleteMany({
-            where: { token: hashedToken }
-    });
+        if (presented.length > 0) {
+            await prisma.session.deleteMany({
+                where: { token: { in: presented.map(hashToken) } }
+            });
         }
 
+        res.clearCookie(REFRESH_COOKIE, { path: '/api/auth' });
         res.json({ message: 'Logged out successfully' });
     } catch (error) {
         res.status(500).json({ error: 'Server error' });
@@ -564,7 +595,9 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
             to: email,
             subject: 'Password Reset Request',
             html: emailHtml,
-    });
+        }).catch((mailError) => {
+            console.error('Password reset email failed:', mailError);
+        });
 
         res.json({ message: 'If an account exists with this email, you will receive a reset link.' });
     } catch (error) {
@@ -616,66 +649,87 @@ router.post('/reset-password', authLimiter, async (req, res) => {
 // Refresh Token - Get new access token using refresh token
 router.post('/refresh', async (req, res) => {
     try {
-        const { refreshToken } = req.body;
+        const presentedToken = readRefreshToken(req);
+        const fromCookie = Boolean((req as express.Request & { cookies?: Record<string, string> }).cookies?.[REFRESH_COOKIE]);
 
-        if (!refreshToken) {
+        if (!presentedToken) {
             return res.status(400).json({ error: 'Refresh token is required' });
-            }
+        }
 
         // Verify refresh token
         let decoded;
         try {
-            decoded = jwt.verify(refreshToken, REFRESH_SECRET) as { id: string; email: string; type: string };
+            decoded = jwt.verify(presentedToken, REFRESH_SECRET) as { id: string; email: string; type: string };
         } catch (err) {
             return res.status(401).json({ error: 'Invalid or expired refresh token' });
-            }
+        }
 
         if (decoded.type !== 'refresh') {
             return res.status(401).json({ error: 'Invalid token type' });
-            }
+        }
 
         // Check if session exists in database
-        const hashedToken = hashToken(refreshToken);
+        const hashedToken = hashToken(presentedToken);
         const session = await prisma.session.findUnique({
             where: { token: hashedToken }
-    });
+        });
 
         if (!session) {
             return res.status(401).json({ error: 'Session expired or revoked' });
-            }
+        }
 
         // Check if user still exists
         const user = await prisma.user.findUnique({
             where: { id: decoded.id },
             select: { id: true, email: true }
-    });
+        });
 
         if (!user) {
             return res.status(401).json({ error: 'User not found' });
-            }
-
-        // Update session last active
-        await prisma.session.update({
-            where: { id: session.id },
-            data: { lastActive: new Date() }
-    });
+        }
 
         // Generate new access token
         const accessToken = jwt.sign(
             { id: user.id, email: user.email, type: 'access' },
             JWT_SECRET,
             { expiresIn: ACCESS_TOKEN_EXPIRY }
-            );
+        );
 
-        res.json({
-            accessToken,
-            expiresIn: 900 // 15 minutes in seconds
-    });
+        if (!fromCookie) {
+            // Bearer clients (the Expo app): keep the session as-is and return only the
+            // access token, which is exactly what those clients expect today.
+            await prisma.session.update({
+                where: { id: session.id },
+                data: { lastActive: new Date() }
+            });
+            return res.json({ accessToken, expiresIn: 900 });
+        }
 
+        // Browser path: rotate the refresh token and revoke the old session.
+        const rotatedRefreshToken = jwt.sign(
+            { id: user.id, email: user.email, type: 'refresh' },
+            REFRESH_SECRET,
+            { expiresIn: REFRESH_TOKEN_EXPIRY }
+        );
+
+        await prisma.$transaction([
+            prisma.session.delete({ where: { id: session.id } }),
+            prisma.session.create({
+                data: {
+                    userId: user.id,
+                    token: hashToken(rotatedRefreshToken),
+                    device: session.device,
+                    ip: session.ip,
+                },
+            }),
+        ]);
+
+        res.cookie(REFRESH_COOKIE, rotatedRefreshToken, refreshCookieOptions());
+        return res.json({ accessToken, expiresIn: 900 });
     } catch (error) {
         console.error('Refresh token error:', error);
         res.status(500).json({ error: 'Server error' });
-        }
-    });
+    }
+});
 
 export default router;

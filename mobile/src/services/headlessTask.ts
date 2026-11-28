@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { AutomationHistoryService } from './automationHistory';
 import { NotificationStore } from './notificationStore';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../lib/secureStore';
 
 export const headlessNotificationHandler = async (data: any) => {
     let { notification } = data;
@@ -87,7 +87,7 @@ export const headlessNotificationHandler = async (data: any) => {
             content: {
                 title: "Transaction Captured 📸",
                 body: "Tap to review and process.",
-                data: { url: '/automation' }
+                data: { url: '/automation/settings' }
             },
             trigger: null,
         });

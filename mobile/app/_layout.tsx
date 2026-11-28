@@ -47,13 +47,16 @@ export default function RootLayout() {
                                 <Stack
                                     screenOptions={{
                                         headerShown: false,
-                                        contentStyle: { backgroundColor: isDark ? '#020617' : '#f4f4f5' }, // Slate 950 : Zinc 100
+                                        contentStyle: { backgroundColor: isDark ? '#080a14' : '#f6f7fb' },
                                     }}
                                 >
                                     <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                                    <Stack.Screen name="trash" options={{ headerShown: false, animation: 'slide_from_right' }} />
+                                    <Stack.Screen name="notifications" options={{ headerShown: false, animation: 'slide_from_right' }} />
                                     <Stack.Screen name="auth/login" options={{ headerShown: false, animation: 'fade' }} />
                                     <Stack.Screen name="auth/register" options={{ headerShown: false, animation: 'slide_from_right' }} />
                                     <Stack.Screen name="auth/forgot-password" options={{ headerShown: false, animation: 'slide_from_right' }} />
+                                    <Stack.Screen name="auth/local-setup" options={{ headerShown: false, animation: 'slide_from_right' }} />
 
                                     <Stack.Screen
                                         name="add-transaction"

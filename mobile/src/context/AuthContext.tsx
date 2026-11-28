@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../lib/secureStore';
 import { useRouter, useSegments } from 'expo-router';
 import api, { setTokens, clearTokens, getAccessToken, getRefreshToken } from '../lib/api';
 import { initDb } from '../services/localDb';

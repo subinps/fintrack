@@ -65,7 +65,7 @@ export default function AccountDetailsScreen() {
                         <Text className="text-onSurfaceVariant text-xs">{format(new Date(item.date), 'MMM dd, yyyy')}</Text>
                     </View>
                 </View>
-                <Text className={`font-bold text-base ${isIncome ? 'text-emerald-400' : 'text-onSurface'}`}>
+                <Text className={`font-bold text-base ${isIncome ? 'text-success' : 'text-onSurface'}`}>
                     {isIncome ? '+' : ''}{formatCurrency(amount)}
                 </Text>
             </TouchableOpacity>

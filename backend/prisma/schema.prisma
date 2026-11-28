@@ -18,12 +18,15 @@ model User {
   verificationTokenExpiry DateTime?
   resetToken        String?
   resetTokenExpiry  DateTime?
-  
+  timezone          String   @default("Asia/Kolkata")
+
   sessions      Session[]
   accounts      Account[]
   transactions  Transaction[]
   snapshots     NetWorthSnapshot[]
   categories    Category[]
+  notifications Notification[]
+  transactionHistory TransactionHistory[]
 }
 
 model Session {
@@ -35,6 +38,8 @@ model Session {
   ip        String?
   lastActive DateTime @default(now())
   createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Account {
@@ -42,58 +47,105 @@ model Account {
   name         String
   type         String   // ASSET, LIABILITY, INCOME, EXPENSE, EQUITY
   // For sub-types like 'Bank', 'Credit Card', 'Category Name', 'Stock', 'Mutual Fund'
-  subType      String?  
-  
+  subType      String?
+
   // Extended fields for specific account types
   interestRate Float?   // For Debts/Loans
   dueDate      DateTime? // For Debts/Loans
   symbol       String?  // For Investments
   units        Float?   // For Investments
-  
+
   lastMarketPrice Decimal? // Store as Decimal for precision
   lastMarketUpdate DateTime?
-  
+
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   splits       TransactionSplit[]
-  
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, type])
 }
 
 model Transaction {
   id           Int      @id @default(autoincrement())
   date         DateTime @default(now())
   description  String
-  
+
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   splits       TransactionSplit[]
-  
+  history      TransactionHistory[]
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  
+
   status       TransactionStatus @default(COMPLETED)
+  idempotencyKey String? @unique
+  source       String   @default("MANUAL") // MANUAL, IMPORT, RECURRING, AUTOMATION
+  sourceId     String?
+  deletedAt    DateTime?
+  voidReason   String?
+
+  @@index([userId, status, date(sort: Desc), id(sort: Desc)])
+  @@index([userId, deletedAt])
 }
 
 enum TransactionStatus {
   DRAFT
   COMPLETED
+  VOIDED
 }
 
 model TransactionSplit {
   id            Int         @id @default(autoincrement())
   amount        BigInt      // Positive for Debit, Negative for Credit (or vice versa, standard is Debit +, Credit -)
-  
+
   transactionId Int
   transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  
+
   accountId     Int
   account       Account     @relation(fields: [accountId], references: [id])
-  
+
   units         Decimal?    // Units purchased (positive) or sold (negative)
+
+  @@index([transactionId])
+  @@index([accountId])
+}
+
+model TransactionHistory {
+  id            Int         @id @default(autoincrement())
+  transactionId Int
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action        String      // CREATE, UPDATE, VOID, RESTORE
+  before        Json?
+  after         Json?
+  actor         String      @default("USER") // USER, SYSTEM, RECURRING, AUTOMATION
+  createdAt     DateTime    @default(now())
+
+  @@index([transactionId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // JOB_FAILED, ACCOUNT_DUPLICATE, AUTOMATION_DISABLED, SYNC, BUDGET...
+  title     String
+  body      String
+  href      String?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 model MarketPrice {
@@ -108,7 +160,8 @@ model NetWorthSnapshot {
   netWorth    Decimal
   assets      Decimal
   liabilities Decimal
-  
+  createdAt   DateTime @default(now())
+
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 

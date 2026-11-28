@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useGetTransactions, useAddTransaction, useGetAccounts, useAddAccount, useEditTransaction, useDeleteTransaction, Transaction, useGetTransactionsInfinite } from '../hooks/useQueries';
+import { useGetTransactions, useAddTransaction, useGetAccounts, useAddAccount, useEditTransaction, useDeleteTransaction, useRestoreTransaction, Transaction, useGetTransactionsInfinite } from '../hooks/useQueries';
 import { Plus, Download, ArrowRight, Trash2, PlusCircle, Edit, Loader2, Calendar as CalendarIcon, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -167,6 +167,7 @@ export function TransactionsTab({
   const addTransaction = useAddTransaction();
   const editTransaction = useEditTransaction();
   const deleteTransaction = useDeleteTransaction();
+  const restoreTransaction = useRestoreTransaction();
   const addAccount = useAddAccount();
 
   const [open, setOpen] = useState(false);
@@ -566,8 +567,23 @@ export function TransactionsTab({
 
   const handleDelete = async (id: number) => {
     try {
-      await deleteTransaction.mutateAsync(id);
-      toast.success('Transaction deleted');
+      const deleted = await deleteTransaction.mutateAsync(id);
+      toast.success('Transaction deleted', {
+        description: 'It is voided, not erased.',
+        duration: 8000,
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            try {
+              await restoreTransaction.mutateAsync(id);
+              toast.success('Transaction restored');
+            } catch {
+              toast.error('Could not undo the delete');
+            }
+          },
+        },
+      });
+      return deleted;
     } catch (error) {
       toast.error('Failed to delete transaction');
     }

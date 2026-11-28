@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import api, { setTokens, clearTokens, getAccessToken, getRefreshToken } from '../lib/api';
+import api, { setTokens, clearTokens, getAccessToken, hasSessionHint } from '../lib/api';
 
 interface User {
     id: string;
@@ -9,7 +9,7 @@ interface User {
 
 interface AuthContextType {
     user: User | null;
-    login: (accessToken: string, refreshToken: string, user: User) => void;
+    login: (accessToken: string, refreshToken: string | undefined, user: User) => void;
     logout: () => Promise<void>;
     isLoading: boolean;
 }
@@ -22,10 +22,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const logout = useCallback(async () => {
         try {
-            const refreshToken = getRefreshToken();
-            if (refreshToken) {
-                await api.post('/auth/logout', { refreshToken });
-            }
+            // The HttpOnly refresh cookie is sent with this request and revoked here.
+            await api.post('/auth/logout', {});
         } catch (error) {
             // Ignore logout errors
         }
@@ -34,24 +32,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     useEffect(() => {
-        const token = getAccessToken();
-        if (token) {
-            api.get('/auth/me')
-                .then((res) => {
-                    setUser(res.data);
-                })
-                .catch(() => {
-                    clearTokens();
-                })
-                .finally(() => {
-                    setIsLoading(false);
-                });
-        } else {
-            setIsLoading(false);
-        }
+        const bootstrap = async () => {
+            try {
+                if (!getAccessToken()) {
+                    if (!hasSessionHint()) {
+                        // Never signed in here: no cookie to exchange.
+                        setIsLoading(false);
+                        return;
+                    }
+                    // Reload after the access token expired: try the HttpOnly cookie.
+                    const refreshed = await api.post('/auth/refresh', {});
+                    setTokens(refreshed.data.accessToken);
+                }
+                const me = await api.get('/auth/me');
+                setUser(me.data);
+            } catch {
+                clearTokens();
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        void bootstrap();
     }, []);
 
-    // Listen for auth:logout event from API interceptor
     useEffect(() => {
         const handleLogout = () => {
             setUser(null);
@@ -61,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return () => window.removeEventListener('auth:logout', handleLogout);
     }, []);
 
-    const login = (accessToken: string, refreshToken: string, user: User) => {
+    const login = (accessToken: string, refreshToken: string | undefined, user: User) => {
         setTokens(accessToken, refreshToken);
         setUser(user);
     };

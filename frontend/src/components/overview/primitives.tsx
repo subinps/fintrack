@@ -27,9 +27,9 @@ export function SectionHeading({
   return (
     <div className={cn('flex flex-wrap items-start justify-between gap-3', className)}>
       <div className="min-w-0">
-        {eyebrow ? <p className="eyebrow mb-2">{eyebrow}</p> : null}
+        {eyebrow ? <p className="eyebrow mb-3 inline-block">{eyebrow}</p> : null}
         <h2 className="text-[17px] font-semibold tracking-[-0.025em] text-foreground">{title}</h2>
-        {description ? <p className="mt-1 max-w-prose text-[13px] leading-relaxed text-muted-foreground">{description}</p> : null}
+        {description ? <p className="mt-2 max-w-prose text-[13px] leading-relaxed text-muted-foreground">{description}</p> : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
     </div>

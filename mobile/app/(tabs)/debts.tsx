@@ -4,9 +4,11 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetDebts, useGetReceivables } from '../../src/hooks/useQueries';
 import { Account } from '../../src/hooks/useQueries';
+import { usePalette } from '../../src/lib/palette';
 
 export default function DebtsScreen() {
     const router = useRouter();
+    const palette = usePalette();
     const [activeTab, setActiveTab] = useState<'DEBT' | 'RECEIVABLE'>('DEBT');
 
     const { data: debts, isLoading: loadingDebts, refetch: refetchDebts } = useGetDebts();
@@ -48,7 +50,7 @@ export default function DebtsScreen() {
                     <Ionicons
                         name={activeTab === 'DEBT' ? 'trending-down' : 'trending-up'}
                         size={24}
-                        color={activeTab === 'DEBT' ? '#ef4444' : '#10b981'}
+                        color={activeTab === 'DEBT' ? palette.error : palette.success}
                     />
                 </View>
                 <View>
@@ -57,11 +59,11 @@ export default function DebtsScreen() {
                 </View>
             </View>
             <View className="items-end">
-                <Text className={`font-bold text-lg ${activeTab === 'DEBT' ? 'text-red-400' : 'text-emerald-400'
+                <Text className={`font-bold text-lg ${activeTab === 'DEBT' ? 'text-error' : 'text-success'
                     }`}>
                     {formatCurrency(Number(item.balance))}
                 </Text>
-                <Ionicons name="chevron-forward" size={20} color="#6b7280" />
+                <Ionicons name="chevron-forward" size={20} color={palette.onSurfaceVariant} />
             </View>
         </TouchableOpacity>
     );
@@ -96,7 +98,7 @@ export default function DebtsScreen() {
                     <Text className="text-onSurfaceVariant text-sm uppercase mb-1">
                         {activeTab === 'DEBT' ? 'Total Outstanding Debt' : 'Total Receivables'}
                     </Text>
-                    <Text className={`text-3xl font-bold ${activeTab === 'DEBT' ? 'text-red-400' : 'text-emerald-400'
+                    <Text className={`text-3xl font-bold ${activeTab === 'DEBT' ? 'text-error' : 'text-success'
                         }`}>
                         {formatCurrency(totalAmount)}
                     </Text>
@@ -105,7 +107,7 @@ export default function DebtsScreen() {
 
             {isLoading ? (
                 <View className="flex-1 justify-center items-center">
-                    <ActivityIndicator size="large" color="#3b82f6" />
+                    <ActivityIndicator size="large" color="{palette.primary}" />
                 </View>
             ) : (
                 <FlatList
@@ -114,7 +116,7 @@ export default function DebtsScreen() {
                     renderItem={renderItem}
                     contentContainerStyle={{ paddingBottom: 100 }}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#3b82f6" />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="{palette.primary}" />
                     }
                     ListEmptyComponent={
                         <View className="items-center justify-center py-20">

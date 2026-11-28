@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter, Link } from 'expo-router';
+import { useColorScheme } from 'nativewind';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../src/lib/api';
 import { useAlert } from '../../src/context/AlertContext';
 
 export default function ForgotPassword() {
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === 'dark';
+    const accent = isDark ? '#58B596' : '#1F6E5A';
+    const muted = isDark ? '#98A6A0' : '#5A615D';
+    const danger = isDark ? '#DE7060' : '#AA3928';
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -51,57 +58,57 @@ export default function ForgotPassword() {
 
     if (success) {
         return (
-            <View className="flex-1 bg-slate-950 justify-center items-center p-6">
+            <View className="flex-1 bg-background justify-center items-center p-6">
                 <LinearGradient
-                    colors={['#020617', '#0f172a', '#020617']}
+                    colors={isDark ? ['#0D1210', '#131A17', '#0D1210'] : ['#F7F5F0', '#FEFDFB', '#F7F5F0']}
                     className="absolute inset-0"
                 />
-                <View className="bg-slate-900/80 border border-slate-800 rounded-[40px] p-10 items-center space-y-8 w-full max-w-sm">
-                    <View className="w-24 h-24 bg-blue-500/10 rounded-full items-center justify-center mb-2 border border-blue-500/20">
-                        <Ionicons name="mail" size={48} color="#3b82f6" />
+                <Animated.View entering={FadeInUp.springify()} className="bg-surface border border-outline rounded-[40px] p-10 items-center space-y-8 w-full max-w-sm">
+                    <View className="w-24 h-24 bg-primary/10 rounded-full items-center justify-center mb-2 border border-primary/25">
+                        <Ionicons name="mail" size={48} color={accent} />
                     </View>
 
                     <View className="items-center space-y-2">
-                        <Text className="text-3xl font-bold text-white text-center">Check Inbox</Text>
-                        <Text className="text-slate-400 text-center text-base leading-6 px-2">
-                            If an account exists for <Text className="text-blue-400 font-semibold">{email}</Text>, you'll receive a password reset link shortly.
+                        <Text className="text-3xl font-bold text-onSurface text-center">Check Inbox</Text>
+                        <Text className="text-onSurfaceVariant text-center text-base leading-6 px-2">
+                            If an account exists for <Text className="text-primary font-semibold">{email}</Text>, you'll receive a password reset link shortly.
                         </Text>
                     </View>
 
                     <View className="w-full space-y-4 pt-4">
                         <TouchableOpacity
                             onPress={() => router.replace('/auth/login')}
-                            className="bg-blue-600 h-16 rounded-2xl items-center justify-center w-full active:bg-blue-700"
+                            className="bg-primary h-16 rounded-2xl items-center justify-center w-full active:opacity-80"
                         >
-                            <Text className="text-white font-bold text-lg">Back to Login</Text>
+                            <Text className="text-primary-foreground font-bold text-lg">Back to Login</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
                             onPress={handleResendLink}
                             disabled={resending}
-                            className="h-14 rounded-2xl items-center justify-center w-full border border-slate-700 active:bg-slate-800"
+                            className="h-14 rounded-2xl items-center justify-center w-full border border-outline active:bg-surfaceVariant"
                         >
                             {resending ? (
-                                <ActivityIndicator color="#94a3b8" />
+                                <ActivityIndicator color={muted} />
                             ) : (
-                                <Text className="text-slate-300 font-semibold">Resend Link</Text>
+                                <Text className="text-onSurface font-semibold">Resend Link</Text>
                             )}
                         </TouchableOpacity>
                     </View>
-                </View>
+                </Animated.View>
             </View>
         );
     }
 
     return (
-        <View className="flex-1 bg-slate-950">
+        <View className="flex-1 bg-background overflow-hidden">
             <LinearGradient
-                colors={['#020617', '#0f172a', '#020617']}
+                colors={isDark ? ['#0D1210', '#131A17', '#0D1210'] : ['#F7F5F0', '#FEFDFB', '#F7F5F0']}
                 className="absolute inset-0"
             />
 
-            {/* Background Blobs */}
-            <View className="absolute top-[-50] left-[-50] w-[300] h-[300] bg-blue-500/10 rounded-full blur-3xl" />
+            {/* Background Blob */}
+            <View pointerEvents="none" className="absolute top-[-50] left-[-50] w-[300] h-[300] bg-primary/10 rounded-full blur-3xl" />
 
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -112,39 +119,41 @@ export default function ForgotPassword() {
                     contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}
                 >
                     <TouchableOpacity
-                        onPress={() => router.back()}
-                        className="absolute top-12 left-6 w-12 h-12 bg-slate-900/50 rounded-full items-center justify-center border border-slate-800"
+                        onPress={() => (router.canGoBack() ? router.back() : router.replace('/auth/login'))}
+                        className="absolute top-12 left-6 w-12 h-12 bg-surface rounded-full items-center justify-center border border-outline active:opacity-70"
+                        accessibilityRole="button"
+                        accessibilityLabel="Go back"
                     >
-                        <Ionicons name="arrow-back" size={24} color="#94a3b8" />
+                        <Ionicons name="arrow-back" size={24} color={muted} />
                     </TouchableOpacity>
 
-                    <View className="items-center mb-10 mt-12">
-                        <View className="w-16 h-16 bg-blue-500/10 rounded-2xl items-center justify-center mb-4 border border-blue-500/20">
-                            <Ionicons name="key-outline" size={32} color="#3b82f6" />
+                    <Animated.View entering={FadeInDown.delay(120).springify()} className="items-center mb-10 mt-12">
+                        <View className="w-16 h-16 bg-primary/10 rounded-2xl items-center justify-center mb-4 border border-primary/25">
+                            <Ionicons name="key-outline" size={32} color={accent} />
                         </View>
-                        <Text className="text-4xl font-bold text-white tracking-tight text-center">
+                        <Text className="text-4xl font-bold text-onSurface tracking-tight text-center">
                             Forgot Password?
                         </Text>
-                        <Text className="text-slate-400 mt-2 text-base text-center px-6">
+                        <Text className="text-onSurfaceVariant mt-2 text-base text-center px-6">
                             Enter your email and we'll send you instructions to reset your password.
                         </Text>
-                    </View>
+                    </Animated.View>
 
-                    <View className="bg-slate-900/50 border border-slate-800 rounded-[32px] p-6 space-y-6">
+                    <Animated.View entering={FadeInUp.delay(260).springify()} className="bg-surface border border-outline rounded-[32px] p-6 space-y-6">
                         {error && (
-                            <View className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex-row items-center">
-                                <Ionicons name="alert-circle-outline" size={20} color="#ef4444" />
-                                <Text className="text-red-400 ml-2 font-medium flex-1">{error}</Text>
-                            </View>
+                            <Animated.View entering={FadeInDown.duration(180)} className="bg-error/10 border border-error/25 p-4 rounded-2xl flex-row items-center">
+                                <Ionicons name="alert-circle-outline" size={20} color={danger} />
+                                <Text className="text-error ml-2 font-medium flex-1">{error}</Text>
+                            </Animated.View>
                         )}
                         <View className="space-y-2">
-                            <Text className="text-slate-400 ml-1 font-medium text-sm">Email Address</Text>
-                            <View className="flex-row items-center bg-slate-950/50 border border-slate-800 rounded-2xl px-4 h-14">
-                                <Ionicons name="mail-outline" size={20} color="#64748b" />
+                            <Text className="text-onSurfaceVariant ml-1 font-medium text-sm">Email Address</Text>
+                            <View className="flex-row items-center bg-surfaceVariant border border-outline rounded-2xl px-4 h-14">
+                                <Ionicons name="mail-outline" size={20} color={muted} />
                                 <TextInput
-                                    className="flex-1 text-white ml-3 text-base"
+                                    className="flex-1 text-onSurface ml-3 text-base"
                                     placeholder="name@example.com"
-                                    placeholderTextColor="#475569"
+                                    placeholderTextColor={muted}
                                     value={email}
                                     onChangeText={setEmail}
                                     autoCapitalize="none"
@@ -156,21 +165,21 @@ export default function ForgotPassword() {
                         <TouchableOpacity
                             onPress={handleReset}
                             disabled={loading}
-                            className="bg-blue-600 h-16 rounded-2xl items-center justify-center mt-2 active:bg-blue-700"
+                            className="bg-primary h-16 rounded-2xl items-center justify-center mt-2 active:opacity-80"
                         >
                             {loading ? (
-                                <ActivityIndicator color="white" />
+                                <ActivityIndicator color={isDark ? '#0A1710' : '#FBFAF7'} />
                             ) : (
-                                <Text className="text-white font-bold text-lg">Send Reset Link</Text>
+                                <Text className="text-primary-foreground font-bold text-lg">Send Reset Link</Text>
                             )}
                         </TouchableOpacity>
-                    </View>
+                    </Animated.View>
 
                     <TouchableOpacity
-                        onPress={() => router.back()}
-                        className="mt-8 self-center"
+                        onPress={() => (router.canGoBack() ? router.back() : router.replace('/auth/login'))}
+                        className="mt-8 self-center py-2"
                     >
-                        <Text className="text-slate-500 font-medium">Remember your password? <Text className="text-blue-400 font-bold">Sign In</Text></Text>
+                        <Text className="text-onSurfaceVariant font-medium">Remember your password? <Text className="text-primary font-bold">Sign In</Text></Text>
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>

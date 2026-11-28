@@ -138,7 +138,7 @@ export function NetWorthHero({
 
 export function HealthCompass({ health }: { health: HealthScore }) {
   return (
-    <section className="panel flex h-full flex-col p-5 sm:p-6" aria-labelledby="health-heading">
+    <section className="panel mt-4 flex h-full flex-col p-5 sm:p-6 lg:mt-0" aria-labelledby="health-heading">
       <SectionHeading
         eyebrow="Compass"
         title="Financial health"

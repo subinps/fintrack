@@ -182,7 +182,7 @@ export default function ChartOfAccountsScreen() {
                             </View>
                         </View>
                         <View className="items-end flex-shrink-0">
-                            <Text className={`font-bold text-base ${item.type === 'LIABILITY' || item.type === 'EXPENSE' ? 'text-red-400' : 'text-emerald-400'
+                            <Text className={`font-bold text-base ${item.type === 'LIABILITY' || item.type === 'EXPENSE' ? 'text-error' : 'text-success'
                                 }`}>
                                 {formatCurrency(Number(item.balance))}
                             </Text>
@@ -192,7 +192,7 @@ export default function ChartOfAccountsScreen() {
                 renderSectionHeader={({ section: { title, total } }) => (
                     <View className="flex-row justify-between items-center px-4 py-2 bg-background/95 backdrop-blur-md mt-2">
                         <Text className="text-onSurfaceVariant font-bold uppercase text-xs tracking-wider">{title}</Text>
-                        <Text className={`font-bold text-xs ${activeTab === 'LIABILITY' || activeTab === 'EXPENSE' ? 'text-red-400' : 'text-emerald-400'}`}>
+                        <Text className={`font-bold text-xs ${activeTab === 'LIABILITY' || activeTab === 'EXPENSE' ? 'text-error' : 'text-success'}`}>
                             {formatCurrency(total)}
                         </Text>
                     </View>

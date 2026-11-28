@@ -1,10 +1,10 @@
 import { View, Text, SectionList, RefreshControl, TouchableOpacity, LayoutAnimation, Platform, UIManager, TextInput, Modal, ScrollView, Alert } from 'react-native';
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useGetTransactions, useGetAccounts, useApproveTransaction, useDeleteTransaction } from '../../src/hooks/useQueries';
+import { useGetTransactions, useGetAccounts, useApproveTransaction, useDeleteTransaction, useBulkTransactionAction } from '../../src/hooks/useQueries';
 import { Ionicons } from '@expo/vector-icons';
 import { format, parseISO, isToday, isYesterday } from 'date-fns';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../../src/lib/haptics';
 import { useColorScheme } from 'nativewind';
 
 if (Platform.OS === 'android') {
@@ -23,6 +23,37 @@ export default function TransactionsScreen() {
     const { data: accounts } = useGetAccounts();
     const approveTransaction = useApproveTransaction();
     const deleteTransaction = useDeleteTransaction();
+    const bulkAction = useBulkTransactionAction();
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+
+    const toggleSelected = useCallback((id: number) => {
+        Haptics.selectionAsync();
+        setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    }, []);
+
+    const handleBulkVoid = useCallback(() => {
+        if (selectedIds.length === 0) return;
+        showAlert(
+            'Move to trash?',
+            `${selectedIds.length} transaction${selectedIds.length > 1 ? 's' : ''} can be restored from Trash.`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Move to trash',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await bulkAction.mutateAsync({ ids: selectedIds, action: 'void' });
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                            setSelectedIds([]);
+                        } catch (error) {
+                            showAlert('Error', 'Could not move the selected transactions to trash.');
+                        }
+                    },
+                },
+            ]
+        );
+    }, [bulkAction, selectedIds, showAlert]);
     const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
     const [refreshing, setRefreshing] = useState(false);
@@ -182,13 +213,22 @@ export default function TransactionsScreen() {
         // Determine type based on splits (Income, Expense, Transfer)
         const isExpense = item.splits.some((s: any) => s.account?.type === 'EXPENSE');
         const isIncome = item.splits.some((s: any) => s.account?.type === 'INCOME');
+        const isSelected = selectedIds.includes(item.id);
 
         return (
             <TouchableOpacity
-                className="bg-surface border border-outline rounded-3xl p-4 flex-row justify-between items-center mx-4 mb-3 active:bg-surfaceVariant"
+                className={`bg-surface border rounded-3xl p-4 flex-row justify-between items-center mx-4 mb-3 active:bg-surfaceVariant ${isSelected ? 'border-primary-600' : 'border-outline'}`}
                 onPress={() => {
+                    if (selectedIds.length > 0) {
+                        toggleSelected(item.id);
+                        return;
+                    }
                     Haptics.selectionAsync();
                     router.push(`/edit-transaction/${item.id}`);
+                }}
+                onLongPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    toggleSelected(item.id);
                 }}
                 activeOpacity={0.7}
             >
@@ -197,7 +237,7 @@ export default function TransactionsScreen() {
                         <Ionicons
                             name={isIncome ? 'arrow-down' : isExpense ? 'arrow-up' : 'swap-horizontal'}
                             size={20}
-                            color={isIncome ? '#34d399' : isExpense ? '#f87171' : '#60a5fa'}
+                            color={isIncome ? (isDark ? '#34d399' : '#036a4b') : isExpense ? (isDark ? '#f87171' : '#b91c1c') : (isDark ? '#7db4ff' : '#0374b8')}
                         />
                     </View>
                     <View className="flex-1 mr-2">
@@ -208,7 +248,7 @@ export default function TransactionsScreen() {
                     </View>
                 </View>
                 <View className="items-end">
-                    <Text className={`font-bold text-lg ${isIncome ? 'text-secondary' : isExpense ? 'text-onSurface' : 'text-blue-400'}`}>
+                    <Text className={`font-bold text-lg ${isIncome ? 'text-secondary' : isExpense ? 'text-onSurface' : 'text-info'}`}>
                         {isIncome ? '+' : isExpense ? '-' : ''}{formatCurrency(totalAmount)}
                     </Text>
                     {viewMode === 'DRAFTS' && (
@@ -237,15 +277,27 @@ export default function TransactionsScreen() {
             <View className="pt-16 pb-2 px-4 bg-background z-10">
                 <View className="flex-row justify-between items-center mb-4 px-2">
                     <Text className="text-3xl font-bold text-onSurface tracking-tight">Transactions</Text>
-                    <TouchableOpacity
-                        onPress={() => setShowFilters(true)}
-                        className={`w-10 h-10 rounded-full items-center justify-center border border-outline ${filterType !== 'ALL' || minAmount || maxAmount || startDate || endDate || selectedAccountId
-                            ? 'bg-primary-600 border-primary-600'
-                            : 'bg-surface'
-                            }`}
-                    >
-                        <Ionicons name="options-outline" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
-                    </TouchableOpacity>
+                    <View className="flex-row items-center gap-2">
+                        <TouchableOpacity
+                            onPress={() => {
+                                Haptics.selectionAsync();
+                                router.push('/trash');
+                            }}
+                            className="w-10 h-10 rounded-full items-center justify-center border border-outline bg-surface"
+                            accessibilityLabel="Open trash"
+                        >
+                            <Ionicons name="trash-outline" size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => setShowFilters(true)}
+                            className={`w-10 h-10 rounded-full items-center justify-center border border-outline ${filterType !== 'ALL' || minAmount || maxAmount || startDate || endDate || selectedAccountId
+                                ? 'bg-primary-600 border-primary-600'
+                                : 'bg-surface'
+                                }`}
+                        >
+                            <Ionicons name="options-outline" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Search Bar */}
@@ -264,6 +316,20 @@ export default function TransactionsScreen() {
                         </TouchableOpacity>
                     )}
                 </View>
+
+                {selectedIds.length > 0 && (
+                    <View className="flex-row items-center justify-between bg-surface border border-primary-600/40 rounded-3xl px-4 py-2.5 mt-1">
+                        <Text className="text-onSurface font-semibold">{selectedIds.length} selected</Text>
+                        <View className="flex-row items-center gap-3">
+                            <TouchableOpacity onPress={() => setSelectedIds([])}>
+                                <Text className="text-onSurfaceVariant font-semibold text-sm">Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={handleBulkVoid} className="bg-error px-3.5 py-2 rounded-full">
+                                <Text className="text-white text-xs font-bold">Move to trash</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
             </View>
 
             {/* View Mode Toggle */}
@@ -444,7 +510,7 @@ export default function TransactionsScreen() {
                                 setSelectedAccountId(null);
                             }}
                         >
-                            <Text className="text-red-400 font-bold">Reset Filters</Text>
+                            <Text className="text-error font-bold">Reset Filters</Text>
                         </TouchableOpacity>
                     </ScrollView>
                 </View>

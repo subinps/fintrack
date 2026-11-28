@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Modal, Switch, Platform, ActivityIndicator, useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../../src/lib/secureStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetUser, useChangePassword, useResetData, useDeleteUser } from '../../src/hooks/useQueries';
 import { useState, useEffect } from 'react';
@@ -10,6 +10,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import { useAuth } from '../../src/context/AuthContext';
 import { useAlert } from '../../src/context/AlertContext';
 import { useColorScheme as useNativeWindColorScheme } from 'nativewind';
+import { usePalette } from '../../src/lib/palette';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
@@ -25,6 +26,7 @@ export default function SettingsScreen() {
     const { showAlert } = useAlert();
     const { colorScheme, setColorScheme } = useNativeWindColorScheme();
     const isDark = colorScheme === 'dark';
+    const palette = usePalette();
 
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');
@@ -370,7 +372,7 @@ export default function SettingsScreen() {
                         className="w-10 h-10 rounded-full bg-surfaceVariant items-center justify-center"
                         onPress={handleLogout}
                     >
-                        <Ionicons name="log-out-outline" size={20} color="#ef4444" />
+                        <Ionicons name="log-out-outline" size={20} color={palette.error} />
                     </TouchableOpacity>
                 </View>
 
@@ -381,7 +383,7 @@ export default function SettingsScreen() {
                         <View className="p-4 flex-row items-center justify-between">
                             <View className="flex-row items-center gap-4">
                                 <View className="w-10 h-10 rounded-full bg-blue-500/20 items-center justify-center">
-                                    <Ionicons name={colorScheme === 'dark' ? "moon" : "sunny"} size={20} color="#3b82f6" />
+                                    <Ionicons name={colorScheme === 'dark' ? "moon" : "sunny"} size={20} color={palette.primary} />
                                 </View>
                                 <View>
                                     <Text className="text-onSurface font-semibold text-base">Theme</Text>
@@ -393,8 +395,8 @@ export default function SettingsScreen() {
                             <Switch
                                 value={colorScheme === 'dark'}
                                 onValueChange={(value) => setColorScheme(value ? 'dark' : 'light')}
-                                trackColor={{ false: isDark ? '#1e293b' : '#e4e4e7', true: '#8b5cf6' }}
-                                thumbColor={'#ffffff'}
+                                trackColor={{ false: palette.outline, true: palette.primary }}
+                                thumbColor={palette.surface}
                             />
                         </View>
                     </View>
@@ -408,7 +410,7 @@ export default function SettingsScreen() {
                         <View className="p-4 flex-row items-center justify-between border-b border-outline">
                             <View className="flex-row items-center gap-4">
                                 <View className="w-10 h-10 rounded-full bg-purple-500/20 items-center justify-center">
-                                    <Ionicons name="notifications" size={20} color="#a855f7" />
+                                    <Ionicons name="notifications" size={20} color={palette.info} />
                                 </View>
                                 <View>
                                     <Text className="text-onSurface font-semibold text-base">Daily Reminder</Text>
@@ -418,8 +420,8 @@ export default function SettingsScreen() {
                             <Switch
                                 value={notificationsEnabled}
                                 onValueChange={toggleNotifications}
-                                trackColor={{ false: isDark ? '#1e293b' : '#e4e4e7', true: '#8b5cf6' }}
-                                thumbColor={'#ffffff'}
+                                trackColor={{ false: palette.outline, true: palette.primary }}
+                                thumbColor={palette.surface}
                             />
                         </View>
 
@@ -447,7 +449,7 @@ export default function SettingsScreen() {
                                 <View className="p-4 flex-row items-center justify-between border-b border-outline">
                                     <View className="flex-row items-center gap-4">
                                         <View className="w-10 h-10 rounded-full bg-emerald-500/20 items-center justify-center">
-                                            <Ionicons name="finger-print" size={20} color="#10b981" />
+                                            <Ionicons name="finger-print" size={20} color={palette.success} />
                                         </View>
                                         <View>
                                             <Text className="text-onSurface font-semibold text-base">Biometric Lock</Text>
@@ -457,8 +459,8 @@ export default function SettingsScreen() {
                                     <Switch
                                         value={biometricsEnabled}
                                         onValueChange={toggleBiometrics}
-                                        trackColor={{ false: isDark ? '#1e293b' : '#e4e4e7', true: '#8b5cf6' }}
-                                        thumbColor={'#ffffff'}
+                                        trackColor={{ false: palette.outline, true: palette.primary }}
+                                        thumbColor={palette.surface}
                                     />
                                 </View>
                             )}
@@ -470,14 +472,14 @@ export default function SettingsScreen() {
                             >
                                 <View className="flex-row items-center gap-4">
                                     <View className="w-10 h-10 rounded-full bg-orange-500/20 items-center justify-center">
-                                        <Ionicons name="key" size={20} color="#f97316" />
+                                        <Ionicons name="key" size={20} color={palette.warning} />
                                     </View>
                                     <View>
                                         <Text className="text-onSurface font-semibold text-base">Change Password</Text>
                                         <Text className="text-onSurfaceVariant text-xs">Update your login credentials</Text>
                                     </View>
                                 </View>
-                                <Ionicons name="chevron-forward" size={20} color={isDark ? "#94a3b8" : "#71717a"} />
+                                <Ionicons name="chevron-forward" size={20} color={palette.onSurfaceVariant} />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -489,18 +491,18 @@ export default function SettingsScreen() {
                     <View className="bg-surface rounded-3xl overflow-hidden border border-outline">
                         <TouchableOpacity
                             className="p-4 flex-row items-center justify-between border-b border-outline active:bg-surfaceVariant"
-                            onPress={() => router.push('/automation')}
+                            onPress={() => router.push('/automation/settings')}
                         >
                             <View className="flex-row items-center gap-4">
                                 <View className="w-10 h-10 rounded-full bg-yellow-500/20 items-center justify-center">
-                                    <Ionicons name="flash" size={20} color="#eab308" />
+                                    <Ionicons name="flash" size={20} color={palette.warning} />
                                 </View>
                                 <View>
                                     <Text className="text-onSurface font-semibold text-base">Automation</Text>
                                     <Text className="text-onSurfaceVariant text-xs">Gemini & Rules</Text>
                                 </View>
                             </View>
-                            <Ionicons name="chevron-forward" size={20} color={isDark ? "#94a3b8" : "#71717a"} />
+                            <Ionicons name="chevron-forward" size={20} color={palette.onSurfaceVariant} />
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -509,11 +511,11 @@ export default function SettingsScreen() {
                         >
                             <View className="flex-row items-center gap-4">
                                 <View className="w-10 h-10 rounded-full bg-pink-500/20 items-center justify-center">
-                                    <Ionicons name="pricetags" size={20} color="#ec4899" />
+                                    <Ionicons name="pricetags" size={20} color={palette.info} />
                                 </View>
                                 <Text className="text-onSurface font-semibold text-base">Categories</Text>
                             </View>
-                            <Ionicons name="chevron-forward" size={20} color={isDark ? "#94a3b8" : "#71717a"} />
+                            <Ionicons name="chevron-forward" size={20} color={palette.onSurfaceVariant} />
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -522,11 +524,11 @@ export default function SettingsScreen() {
                         >
                             <View className="flex-row items-center gap-4">
                                 <View className="w-10 h-10 rounded-full bg-emerald-500/20 items-center justify-center">
-                                    <Ionicons name="list" size={20} color="#10b981" />
+                                    <Ionicons name="list" size={20} color={palette.success} />
                                 </View>
                                 <Text className="text-onSurface font-semibold text-base">Chart of Accounts</Text>
                             </View>
-                            <Ionicons name="chevron-forward" size={20} color={isDark ? "#94a3b8" : "#71717a"} />
+                            <Ionicons name="chevron-forward" size={20} color={palette.onSurfaceVariant} />
                         </TouchableOpacity>
 
                         {!isLocal && (
@@ -537,11 +539,11 @@ export default function SettingsScreen() {
                                 >
                                     <View className="flex-row items-center gap-4">
                                         <View className="w-10 h-10 rounded-full bg-blue-500/20 items-center justify-center">
-                                            <Ionicons name="download-outline" size={20} color="#3b82f6" />
+                                            <Ionicons name="download-outline" size={20} color={palette.primary} />
                                         </View>
                                         <Text className="text-onSurface font-semibold text-base">Export Data</Text>
                                     </View>
-                                    <Ionicons name="chevron-forward" size={20} color={isDark ? "#94a3b8" : "#71717a"} />
+                                    <Ionicons name="chevron-forward" size={20} color={palette.onSurfaceVariant} />
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
@@ -550,11 +552,11 @@ export default function SettingsScreen() {
                                 >
                                     <View className="flex-row items-center gap-4">
                                         <View className="w-10 h-10 rounded-full bg-purple-500/20 items-center justify-center">
-                                            <Ionicons name="cloud-upload-outline" size={20} color="#a855f7" />
+                                            <Ionicons name="cloud-upload-outline" size={20} color={palette.info} />
                                         </View>
                                         <Text className="text-onSurface font-semibold text-base">Import Data</Text>
                                     </View>
-                                    <Ionicons name="chevron-forward" size={20} color={isDark ? "#94a3b8" : "#71717a"} />
+                                    <Ionicons name="chevron-forward" size={20} color={palette.onSurfaceVariant} />
                                 </TouchableOpacity>
                             </>
                         )}
@@ -567,11 +569,11 @@ export default function SettingsScreen() {
                                 >
                                     <View className="flex-row items-center gap-4">
                                         <View className="w-10 h-10 rounded-full bg-indigo-500/20 items-center justify-center">
-                                            <Ionicons name="shield-checkmark" size={20} color="#6366f1" />
+                                            <Ionicons name="shield-checkmark" size={20} color={palette.primary} />
                                         </View>
                                         <Text className="text-onSurface font-semibold text-base">Active Sessions</Text>
                                     </View>
-                                    <Ionicons name="chevron-forward" size={20} color={isDark ? "#94a3b8" : "#71717a"} />
+                                    <Ionicons name="chevron-forward" size={20} color={palette.onSurfaceVariant} />
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
@@ -580,11 +582,11 @@ export default function SettingsScreen() {
                                 >
                                     <View className="flex-row items-center gap-4">
                                         <View className="w-10 h-10 rounded-full bg-red-500/20 items-center justify-center">
-                                            <Ionicons name="refresh" size={20} color="#ef4444" />
+                                            <Ionicons name="refresh" size={20} color={palette.error} />
                                         </View>
                                         <Text className="text-onSurface font-semibold text-base">Reset Data</Text>
                                     </View>
-                                    <Ionicons name="chevron-forward" size={20} color={isDark ? "#94a3b8" : "#71717a"} />
+                                    <Ionicons name="chevron-forward" size={20} color={palette.onSurfaceVariant} />
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
@@ -593,11 +595,11 @@ export default function SettingsScreen() {
                                 >
                                     <View className="flex-row items-center gap-4">
                                         <View className="w-10 h-10 rounded-full bg-red-500/20 items-center justify-center">
-                                            <Ionicons name="trash" size={20} color="#ef4444" />
+                                            <Ionicons name="trash" size={20} color={palette.error} />
                                         </View>
                                         <Text className="text-error font-semibold text-base">Delete Account</Text>
                                     </View>
-                                    <Ionicons name="chevron-forward" size={20} color={isDark ? "#94a3b8" : "#71717a"} />
+                                    <Ionicons name="chevron-forward" size={20} color={palette.onSurfaceVariant} />
                                 </TouchableOpacity>
                             </>
                         )}
@@ -631,7 +633,7 @@ export default function SettingsScreen() {
                         <View className="flex-row justify-between items-center mb-6">
                             <Text className="text-xl font-bold text-onBackground">Change Password</Text>
                             <TouchableOpacity onPress={() => setShowPasswordModal(false)} className="p-2 bg-surfaceVariant rounded-full">
-                                <Ionicons name="close" size={20} color={isDark ? "#94a3b8" : "#a1a1aa"} />
+                                <Ionicons name="close" size={20} color={palette.onSurfaceVariant} />
                             </TouchableOpacity>
                         </View>
 
@@ -641,7 +643,7 @@ export default function SettingsScreen() {
                                 <TextInput
                                     className="bg-background border border-outline rounded-xl px-4 py-4 text-onBackground"
                                     placeholder="Enter current password"
-                                    placeholderTextColor={isDark ? "#94a3b8" : "#71717a"}
+                                    placeholderTextColor={palette.onSurfaceVariant}
                                     secureTextEntry
                                     value={currentPassword}
                                     onChangeText={setCurrentPassword}
@@ -653,7 +655,7 @@ export default function SettingsScreen() {
                                 <TextInput
                                     className="bg-background border border-outline rounded-xl px-4 py-4 text-onBackground"
                                     placeholder="Enter new password"
-                                    placeholderTextColor={isDark ? "#94a3b8" : "#71717a"}
+                                    placeholderTextColor={palette.onSurfaceVariant}
                                     secureTextEntry
                                     value={newPassword}
                                     onChangeText={setNewPassword}
@@ -683,7 +685,7 @@ export default function SettingsScreen() {
                         <View className="flex-row justify-between items-center mb-6">
                             <Text className="text-xl font-bold text-onBackground">Edit Profile</Text>
                             <TouchableOpacity onPress={() => setShowEditProfileModal(false)} className="p-2 bg-surfaceVariant rounded-full">
-                                <Ionicons name="close" size={20} color={isDark ? "#94a3b8" : "#a1a1aa"} />
+                                <Ionicons name="close" size={20} color={palette.onSurfaceVariant} />
                             </TouchableOpacity>
                         </View>
 
@@ -693,7 +695,7 @@ export default function SettingsScreen() {
                                 <TextInput
                                     className="bg-background border border-outline rounded-xl px-4 py-4 text-onBackground"
                                     placeholder="Enter your name"
-                                    placeholderTextColor={isDark ? "#94a3b8" : "#71717a"}
+                                    placeholderTextColor={palette.onSurfaceVariant}
                                     value={editName}
                                     onChangeText={setEditName}
                                     autoFocus

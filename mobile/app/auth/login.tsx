@@ -8,9 +8,10 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../src/lib/api';
 import Animated, { FadeInDown, FadeInUp, useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 import { useAlert } from '../../src/context/AlertContext';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../../src/lib/secureStore';
 import { Modal, TouchableWithoutFeedback, Keyboard, Dimensions, BackHandler } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { useColorScheme } from 'nativewind';
 import axios from 'axios';
 
 export default function Login() {
@@ -24,6 +25,11 @@ export default function Login() {
     const { signIn, enterLocalMode } = useAuth();
     const router = useRouter();
     const { showAlert } = useAlert();
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === 'dark';
+    const accent = isDark ? '#58B596' : '#1F6E5A';
+    const muted = isDark ? '#98A6A0' : '#5A615D';
+    const danger = isDark ? '#DE7060' : '#AA3928';
     const [testingConnection, setTestingConnection] = useState(false);
     const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
 
@@ -177,16 +183,16 @@ export default function Login() {
     };
 
     return (
-        <View className="flex-1 bg-slate-900">
+        <View className="flex-1 bg-background overflow-hidden">
             <LinearGradient
-                colors={['#0f172a', '#1e293b', '#0f172a']}
+                colors={isDark ? ['#0D1210', '#131A17', '#0D1210'] : ['#F7F5F0', '#FEFDFB', '#F7F5F0']}
                 className="absolute inset-0"
                 pointerEvents="none"
             />
 
             {/* Animated Background Blobs */}
-            <Animated.View pointerEvents="none" style={[blob1Style]} className="absolute top-[-100] left-[-100] w-[300] h-[300] bg-blue-500/20 rounded-full blur-3xl" />
-            <Animated.View pointerEvents="none" style={[blob2Style]} className="absolute bottom-[-50] right-[-50] w-[250] h-[250] bg-purple-500/20 rounded-full blur-3xl" />
+            <Animated.View pointerEvents="none" style={[blob1Style]} className="absolute top-[-100] left-[-100] w-[300] h-[300] bg-primary/15 rounded-full blur-3xl" />
+            <Animated.View pointerEvents="none" style={[blob2Style]} className="absolute bottom-[-50] right-[-50] w-[250] h-[250] bg-success/10 rounded-full blur-3xl" />
 
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
@@ -201,84 +207,84 @@ export default function Login() {
 
                     {/* Logo Section */}
                     <Animated.View entering={FadeInDown.delay(200).springify()} className="items-center mb-12">
-                        <View className="w-24 h-24 bg-blue-500/20 rounded-3xl items-center justify-center mb-6 border border-blue-400/30">
-                            <Ionicons name="wallet-outline" size={48} color="#60a5fa" />
+                        <View className="w-24 h-24 bg-primary/10 rounded-3xl items-center justify-center mb-6 border border-primary/25">
+                            <Ionicons name="wallet-outline" size={48} color={accent} />
                         </View>
-                        <Text className="text-5xl font-bold text-white tracking-tight">
+                        <Text className="text-5xl font-bold text-onSurface tracking-tight">
                             FinTrack
                         </Text>
-                        <Text className="text-slate-400 mt-3 text-lg font-medium tracking-wide">
+                        <Text className="text-onSurfaceVariant mt-3 text-lg font-medium tracking-wide">
                             Track Smart, Grow Fast.
                         </Text>
                     </Animated.View>
 
                     {/* Login Form */}
-                    <Animated.View entering={FadeInUp.delay(400).springify()} className="bg-slate-800/40 border border-slate-700/50 rounded-[32px] p-8 space-y-5 backdrop-blur-md">
+                    <Animated.View entering={FadeInUp.delay(400).springify()} className="bg-surface border border-outline rounded-[32px] p-8 space-y-5">
 
                         {errors.general && (
-                            <Animated.View entering={FadeInDown} className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex-row items-center">
-                                <Ionicons name="alert-circle-outline" size={20} color="#ef4444" />
-                                <Text className="text-red-400 ml-2 font-medium flex-1">{errors.general}</Text>
+                            <Animated.View entering={FadeInDown} className="bg-error/10 border border-error/25 p-4 rounded-2xl flex-row items-center">
+                                <Ionicons name="alert-circle-outline" size={20} color={danger} />
+                                <Text className="text-error ml-2 font-medium flex-1">{errors.general}</Text>
                             </Animated.View>
                         )}
                         <View className="space-y-2">
-                            <Text className="text-slate-300 ml-1 font-medium text-base">Email</Text>
-                            <View className="flex-row items-center bg-slate-900/60 border border-slate-700 rounded-2xl px-4 h-14 focus:border-blue-500 transition-colors">
-                                <Ionicons name="mail-outline" size={22} color="#94a3b8" />
+                            <Text className="text-onSurfaceVariant ml-1 font-medium text-base">Email</Text>
+                            <View className="flex-row items-center bg-surfaceVariant border border-outline rounded-2xl px-4 h-14 focus:border-primary">
+                                <Ionicons name="mail-outline" size={22} color={muted} />
                                 <TextInput
-                                    className="flex-1 text-white ml-3 text-base font-medium"
+                                    className="flex-1 text-onSurface ml-3 text-base font-medium"
                                     placeholder="name@example.com"
-                                    placeholderTextColor="#64748b"
+                                    placeholderTextColor={muted}
                                     value={email}
                                     onChangeText={setEmail}
                                     autoCapitalize="none"
                                     keyboardType="email-address"
                                 />
                             </View>
-                            {errors.email && <Text className="text-red-400 text-xs ml-1">{errors.email}</Text>}
+                            {errors.email && <Text className="text-error text-xs ml-1">{errors.email}</Text>}
                         </View>
 
                         <View className="space-y-2">
-                            <Text className="text-slate-300 ml-1 font-medium text-base">Password</Text>
-                            <View className="flex-row items-center bg-slate-900/60 border border-slate-700 rounded-2xl px-4 h-14 focus:border-blue-500 transition-colors">
-                                <Ionicons name="lock-closed-outline" size={22} color="#94a3b8" />
+                            <Text className="text-onSurfaceVariant ml-1 font-medium text-base">Password</Text>
+                            <View className="flex-row items-center bg-surfaceVariant border border-outline rounded-2xl px-4 h-14 focus:border-primary">
+                                <Ionicons name="lock-closed-outline" size={22} color={muted} />
                                 <TextInput
-                                    className="flex-1 text-white ml-3 text-base font-medium"
+                                    className="flex-1 text-onSurface ml-3 text-base font-medium"
                                     placeholder="••••••••"
-                                    placeholderTextColor="#64748b"
+                                    placeholderTextColor={muted}
                                     value={password}
                                     onChangeText={setPassword}
                                     secureTextEntry={!showPassword}
                                 />
-                                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} className="p-2">
-                                    <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={22} color="#94a3b8" />
+                                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} className="p-2" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                                    <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={22} color={muted} />
                                 </TouchableOpacity>
                             </View>
-                            {errors.password && <Text className="text-red-400 text-xs ml-1">{errors.password}</Text>}
+                            {errors.password && <Text className="text-error text-xs ml-1">{errors.password}</Text>}
                         </View>
 
                         <TouchableOpacity
                             onPress={handleLogin}
                             disabled={loading}
-                            className="bg-blue-600 h-16 rounded-2xl flex-row items-center justify-center mt-6 active:bg-blue-700 active:scale-95 transition-transform"
+                            className="bg-primary h-16 rounded-2xl flex-row items-center justify-center mt-6 active:opacity-80 active:scale-95 transition-transform"
                         >
                             {loading ? (
-                                <ActivityIndicator color="white" size="small" />
+                                <ActivityIndicator color={isDark ? '#0A1710' : '#FBFAF7'} size="small" />
                             ) : (
-                                <Text className="text-white font-bold text-xl tracking-wide text-center" style={{ includeFontPadding: false, textAlignVertical: 'center' }}>Sign In</Text>
+                                <Text className="text-primary-foreground font-bold text-xl tracking-wide text-center" style={{ includeFontPadding: false, textAlignVertical: 'center' }}>Sign In</Text>
                             )}
                         </TouchableOpacity>
 
                         <View className="flex-row justify-between items-center mt-6">
                             <Link href="/auth/forgot-password" asChild>
                                 <TouchableOpacity className="py-3">
-                                    <Text className="text-slate-400 font-medium text-base">Forgot Password?</Text>
+                                    <Text className="text-onSurfaceVariant font-medium text-base">Forgot Password?</Text>
                                 </TouchableOpacity>
                             </Link>
 
                             <Link href="/auth/register" asChild>
-                                <TouchableOpacity className="py-3 px-5 bg-slate-700/50 rounded-xl border border-slate-600/50 active:bg-slate-700 items-center justify-center">
-                                    <Text className="text-blue-400 font-bold text-base text-center" style={{ includeFontPadding: false, textAlignVertical: 'center' }}>Create Account</Text>
+                                <TouchableOpacity className="py-3 px-5 bg-surfaceVariant rounded-xl border border-outline active:opacity-70 items-center justify-center">
+                                    <Text className="text-primary font-bold text-base text-center" style={{ includeFontPadding: false, textAlignVertical: 'center' }}>Create Account</Text>
                                 </TouchableOpacity>
                             </Link>
                         </View>
@@ -292,18 +298,18 @@ export default function Login() {
                                 console.log('Opening settings...');
                                 setShowSettings(true);
                             }}
-                            className="flex-row items-center bg-slate-800/30 px-6 py-3 rounded-2xl border border-slate-700/30 active:bg-slate-800/50"
+                            className="flex-row items-center bg-surface px-6 py-3 rounded-2xl border border-outline active:bg-surfaceVariant"
                         >
-                            <Ionicons name="server-outline" size={18} color="#64748b" />
-                            <Text className="text-slate-400 ml-2 font-semibold tracking-wide uppercase text-xs">Server Settings</Text>
+                            <Ionicons name="server-outline" size={18} color={muted} />
+                            <Text className="text-onSurfaceVariant ml-2 font-semibold tracking-wide uppercase text-xs">Server Settings</Text>
                         </TouchableOpacity>
 
                         <Link href="/auth/local-setup" asChild>
                             <TouchableOpacity
-                                className="flex-row items-center bg-blue-500/10 px-6 py-3 rounded-2xl border border-blue-500/20 active:bg-blue-500/20"
+                                className="flex-row items-center bg-primary/10 px-6 py-3 rounded-2xl border border-primary/25 active:bg-primary/20"
                             >
-                                <Ionicons name="phone-portrait-outline" size={18} color="#60a5fa" />
-                                <Text className="text-blue-400 ml-2 font-semibold tracking-wide uppercase text-xs">Continue in Local Mode</Text>
+                                <Ionicons name="phone-portrait-outline" size={18} color={accent} />
+                                <Text className="text-primary ml-2 font-semibold tracking-wide uppercase text-xs">Continue in Local Mode</Text>
                             </TouchableOpacity>
                         </Link>
                     </View>
@@ -323,30 +329,30 @@ export default function Login() {
                     >
                         <View style={styles.overlayContent}>
                             <View className="items-center mb-6">
-                                <Ionicons name="server" size={40} color="#3b82f6" style={{ marginBottom: 16 }} />
-                                <Text className="text-2xl font-bold text-white text-center">Server Settings</Text>
-                                <Text className="text-slate-400 text-center mt-2 text-sm">
+                                <Ionicons name="server" size={40} color={accent} style={{ marginBottom: 16 }} />
+                                <Text className="text-2xl font-bold text-onSurface text-center">Server Settings</Text>
+                                <Text className="text-onSurfaceVariant text-center mt-2 text-sm">
                                     Configure your custom backend URL.
                                 </Text>
                             </View>
 
                             <View className="space-y-4 mb-6">
                                 <View>
-                                    <Text className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2 ml-1">API URL</Text>
+                                    <Text className="text-onSurfaceVariant text-xs font-bold uppercase tracking-wider mb-2 ml-1">API URL</Text>
                                     <TextInput
                                         style={styles.overlayInput}
                                         value={customUrl}
                                         onChangeText={setCustomUrl}
                                         placeholder="https://your-api.com/api"
-                                        placeholderTextColor="#64748b"
+                                        placeholderTextColor={muted}
                                         autoCapitalize="none"
                                         keyboardType="url"
                                     />
                                 </View>
 
                                 <View className="flex-row justify-end space-x-4">
-                                    <TouchableOpacity onPress={resetToDefault}>
-                                        <Text className="text-blue-400 font-semibold">Reset Default</Text>
+                                    <TouchableOpacity onPress={resetToDefault} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                                        <Text className="text-primary font-semibold">Reset Default</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -354,15 +360,15 @@ export default function Login() {
                             <View className="flex-row space-x-3">
                                 <TouchableOpacity
                                     onPress={() => setShowSettings(false)}
-                                    className="flex-1 py-4 rounded-xl border border-slate-700 items-center"
+                                    className="flex-1 py-4 rounded-xl border border-outline items-center active:opacity-70"
                                 >
-                                    <Text className="text-slate-300 font-bold">Cancel</Text>
+                                    <Text className="text-onSurfaceVariant font-bold">Cancel</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={saveCustomUrl}
-                                    className="flex-1 py-4 rounded-xl bg-blue-600 items-center"
+                                    className="flex-1 py-4 rounded-xl bg-primary items-center active:opacity-80"
                                 >
-                                    <Text className="text-white font-bold">Save</Text>
+                                    <Text className="text-primary-foreground font-bold">Save</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -395,10 +401,10 @@ const styles = StyleSheet.create({
     overlayContent: {
         width: '100%',
         maxWidth: 400,
-        backgroundColor: '#0f172a',
+        backgroundColor: '#131A17',
         borderRadius: 24,
         borderWidth: 1,
-        borderColor: '#334155',
+        borderColor: '#2A3430',
         padding: 24,
         elevation: 20,
         shadowColor: '#000',
@@ -407,13 +413,13 @@ const styles = StyleSheet.create({
         shadowRadius: 20,
     },
     overlayInput: {
-        backgroundColor: '#1e293b',
-        color: 'white',
+        backgroundColor: '#1A221E',
+        color: '#E7EEF3',
         padding: 16,
         borderRadius: 12,
         fontSize: 16,
         borderWidth: 1,
-        borderColor: '#334155',
+        borderColor: '#2A3430',
     },
     modalOverlay: {
         flex: 1,

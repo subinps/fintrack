@@ -66,9 +66,9 @@ export default function AccountsScreen() {
                 <Text className="text-onSurfaceVariant mb-4">Manage your liquidity</Text>
 
                 {/* Total Liquidity Card */}
-                <View className="bg-primary-600/20 border border-primary-500/30 p-4 rounded-2xl">
-                    <Text className="text-primary-300 text-xs uppercase mb-1">Total Liquidity</Text>
-                    <Text className="text-3xl font-bold text-white">{formatCurrency(totalLiquidity)}</Text>
+                <View className="bg-primary/10 border border-primary/25 p-4 rounded-2xl">
+                    <Text className="text-onSurfaceVariant text-xs uppercase mb-1">Total Liquidity</Text>
+                    <Text className="text-3xl font-bold text-onSurface">{formatCurrency(totalLiquidity)}</Text>
                 </View>
             </View>
 
@@ -96,7 +96,7 @@ export default function AccountsScreen() {
                             </View>
                         </View>
                         <View className="items-end flex-shrink-0">
-                            <Text className={`font-bold text-lg ${item.type === 'LIABILITY' ? 'text-red-400' : 'text-emerald-400'
+                            <Text className={`font-bold text-lg ${item.type === 'LIABILITY' ? 'text-error' : 'text-success'
                                 }`}>
                                 {formatCurrency(Number(item.balance))}
                             </Text>
@@ -106,7 +106,7 @@ export default function AccountsScreen() {
                 renderSectionHeader={({ section: { title, total } }) => (
                     <View className="flex-row justify-between items-center px-6 py-2 bg-background/95 backdrop-blur-xl mt-2 border-b border-outline">
                         <Text className="text-onSurfaceVariant font-bold uppercase text-xs tracking-widest">{title}</Text>
-                        <Text className={`font-bold text-xs ${total < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                        <Text className={`font-bold text-xs ${total < 0 ? 'text-error' : 'text-success'}`}>
                             {formatCurrency(total)}
                         </Text>
                     </View>

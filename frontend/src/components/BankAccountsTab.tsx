@@ -181,6 +181,7 @@ export function BankAccountsTab() {
                     <SelectContent>
                       <SelectItem value="savings">Savings Account</SelectItem>
                       <SelectItem value="current">Current Account</SelectItem>
+                      <SelectItem value="bank">Bank Account</SelectItem>
                       <SelectItem value="wallet">Wallet / Cash</SelectItem>
                       <SelectItem value="credit-card">Credit Card</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
@@ -240,7 +241,15 @@ export function BankAccountsTab() {
         <div className="space-y-4">
           {!selectedType ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {['savings', 'current', 'wallet', 'credit-card', 'other'].map(type => {
+              {Array.from(new Set(accounts.map((acc: Account) => acc.subType || 'other')))
+                .sort((a, b) => {
+                  const order = ['savings', 'current', 'wallet', 'credit-card', 'bank', 'other'];
+                  const ia = order.indexOf(a);
+                  const ib = order.indexOf(b);
+                  if (ia !== ib) return (ia < 0 ? order.length : ia) - (ib < 0 ? order.length : ib);
+                  return a.localeCompare(b);
+                })
+                .map(type => {
                 const typeAccounts = accounts.filter((acc: Account) => (acc.subType || 'other') === type);
                 if (typeAccounts.length === 0) return null;
 

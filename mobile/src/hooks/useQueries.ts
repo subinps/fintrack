@@ -31,7 +31,7 @@ export interface Transaction {
   date: string;
   description: string;
   splits: TransactionSplit[];
-  status: 'COMPLETED' | 'DRAFT';
+  status: 'COMPLETED' | 'DRAFT' | 'VOIDED';
 }
 
 // Account Queries
@@ -105,7 +105,7 @@ export function useDeleteAccount() {
 export function useGetBankAccounts() {
   const { data: accounts, ...rest } = useGetAccounts();
   const bankAccounts = accounts?.filter(a =>
-    (a.type === 'ASSET' && ['savings', 'current', 'wallet', 'other'].includes((a.subType || '').toLowerCase())) ||
+    (a.type === 'ASSET' && ['bank', 'savings', 'current', 'wallet', 'other'].includes((a.subType || '').toLowerCase())) ||
     (a.type === 'LIABILITY' && (a.subType || '').toLowerCase() === 'credit-card')
   ) || [];
   return { data: bankAccounts, ...rest };
@@ -449,6 +449,104 @@ export function useGetNetWorthHistory() {
     queryFn: async () => {
       const res = await api.get('/analytics/net-worth-history');
       return res.data;
+    },
+  });
+}
+
+// ── Trash, restore and bulk actions ──
+
+function invalidateLedgerViews(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ['transactions'] });
+  queryClient.invalidateQueries({ queryKey: ['trash'] });
+  queryClient.invalidateQueries({ queryKey: ['transaction'] });
+  queryClient.invalidateQueries({ queryKey: ['accounts'] });
+  queryClient.invalidateQueries({ queryKey: ['notifications'] });
+}
+
+export function useGetTrash() {
+  return useQuery<Transaction[]>({
+    queryKey: ['trash'],
+    queryFn: async () => {
+      const res = await api.get('/transactions?status=VOIDED&limit=-1');
+      if (Array.isArray(res.data)) return res.data;
+      if (Array.isArray(res.data?.data)) return res.data.data;
+      return [];
+    },
+  });
+}
+
+export function useRestoreTransaction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await api.post(`/transactions/${id}/restore`);
+      return res.data;
+    },
+    onSuccess: () => invalidateLedgerViews(queryClient),
+  });
+}
+
+export function useBulkTransactionAction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { ids: number[]; action: 'void' | 'restore' }) => {
+      const res = await api.post('/transactions/bulk', data);
+      return res.data;
+    },
+    onSuccess: () => invalidateLedgerViews(queryClient),
+  });
+}
+
+export interface TransactionHistoryEntry {
+  id: number;
+  action: string;
+  createdAt: string;
+  user?: { name?: string; email?: string } | null;
+}
+
+export function useGetTransactionHistory(id: number) {
+  return useQuery<TransactionHistoryEntry[]>({
+    queryKey: ['transactionHistory', id],
+    queryFn: async () => {
+      const res = await api.get(`/transactions/${id}/history`);
+      return Array.isArray(res.data) ? res.data : [];
+    },
+    enabled: !!id,
+  });
+}
+
+// ── Server notifications ──
+
+export interface AppNotification {
+  id: number;
+  type: string;
+  title: string;
+  body: string;
+  href: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export function useGetNotifications() {
+  return useQuery<{ items: AppNotification[]; unread: number }>({
+    queryKey: ['notifications'],
+    queryFn: async () => {
+      const res = await api.get('/notifications', { params: { limit: 30 } });
+      return { items: res.data?.items ?? [], unread: res.data?.unread ?? 0 };
+    },
+    refetchInterval: 60_000,
+  });
+}
+
+export function useMarkNotificationsRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await api.post('/notifications/read');
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 }

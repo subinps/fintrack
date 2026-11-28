@@ -2,13 +2,16 @@ import axios, { InternalAxiosRequestConfig, AxiosError } from 'axios';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL || '/api',
+    // The refresh token lives in an HttpOnly cookie, so every request carries cookies.
+    withCredentials: true,
 });
 
-// Token storage keys
+// Only the short-lived access token is kept in the browser. The refresh token is
+// HttpOnly and never touches JavaScript or localStorage.
 const ACCESS_TOKEN_KEY = 'accessToken';
-const REFRESH_TOKEN_KEY = 'refreshToken';
+const LEGACY_REFRESH_TOKEN_KEY = 'refreshToken';
+const SESSION_HINT_KEY = 'sessionHint';
 
-// Flag to prevent multiple refresh attempts
 let isRefreshing = false;
 let failedQueue: { resolve: (token: string) => void; reject: (error: Error) => void }[] = [];
 
@@ -23,21 +26,29 @@ const processQueue = (error: Error | null, token: string | null = null) => {
     failedQueue = [];
 };
 
-// Token management functions
 export const getAccessToken = () => localStorage.getItem(ACCESS_TOKEN_KEY);
-export const getRefreshToken = () => localStorage.getItem(REFRESH_TOKEN_KEY);
 
-export const setTokens = (accessToken: string, refreshToken: string) => {
+// A hint that this browser had a session, so the app only tries a cookie refresh
+// when one could exist (avoids a 400 on every signed-out page load).
+export const hasSessionHint = () => localStorage.getItem(SESSION_HINT_KEY) === '1';
+
+export const setAccessToken = (accessToken: string) => {
     localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    localStorage.setItem(SESSION_HINT_KEY, '1');
+};
+
+/** Kept for call sites that still pass a refresh token; it is deliberately ignored. */
+export const setTokens = (accessToken: string, refreshToken?: string) => {
+    void refreshToken;
+    setAccessToken(accessToken);
 };
 
 export const clearTokens = () => {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(LEGACY_REFRESH_TOKEN_KEY);
+    localStorage.removeItem(SESSION_HINT_KEY);
 };
 
-// Request interceptor - add access token to headers
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     const token = getAccessToken();
     if (token && config.headers) {
@@ -46,22 +57,18 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     return config;
 });
 
-// Response interceptor - handle token refresh on 401
 api.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-        // If error is 401 and we haven't already retried
         if (error.response?.status === 401 && !originalRequest._retry) {
-            // Don't try to refresh on auth/refresh or auth/login endpoints
             if (originalRequest.url?.includes('/auth/refresh') ||
                 originalRequest.url?.includes('/auth/login')) {
                 return Promise.reject(error);
             }
 
             if (isRefreshing) {
-                // Wait for the refresh to complete
                 return new Promise((resolve, reject) => {
                     failedQueue.push({ resolve, reject });
                 })
@@ -75,21 +82,16 @@ api.interceptors.response.use(
             originalRequest._retry = true;
             isRefreshing = true;
 
-            const refreshToken = getRefreshToken();
-            if (!refreshToken) {
-                clearTokens();
-                window.dispatchEvent(new CustomEvent('auth:logout'));
-                return Promise.reject(error);
-            }
-
             try {
+                // No token in the body: the browser sends the HttpOnly cookie instead.
                 const response = await axios.post(
                     `${api.defaults.baseURL}/auth/refresh`,
-                    { refreshToken }
+                    {},
+                    { withCredentials: true }
                 );
 
                 const { accessToken } = response.data;
-                localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+                setAccessToken(accessToken);
 
                 processQueue(null, accessToken);
                 originalRequest.headers.Authorization = `Bearer ${accessToken}`;

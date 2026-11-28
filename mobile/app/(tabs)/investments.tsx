@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from 'nativewind';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from '../../src/lib/haptics';
 
 export default function InvestmentsScreen() {
     const router = useRouter();
@@ -110,7 +110,7 @@ export default function InvestmentsScreen() {
                         </View>
                         <View className="items-end">
                             <Text className="text-onSurface font-bold text-lg">{formatCurrency(currentValue)}</Text>
-                            <Text className={`text-xs font-medium ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                            <Text className={`text-xs font-medium ${isPositive ? 'text-success' : 'text-error'}`}>
                                 {isPositive ? '+' : ''}{formatCurrency(change)} ({changePercent.toFixed(1)}%)
                             </Text>
                         </View>
@@ -253,7 +253,7 @@ export default function InvestmentsScreen() {
 
                 {/* Total Value Card */}
                 <LinearGradient
-                    colors={['#3b82f6', '#2563eb', '#1d4ed8']}
+                    colors={['#3b82f6', '#1e6482', '#1d4ed8']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     className="rounded-3xl p-8 mb-8 border border-white/10 overflow-hidden"

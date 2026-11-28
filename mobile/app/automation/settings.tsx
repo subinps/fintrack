@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { NotificationStore, AppInfo } from '../../src/services/notificationStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../../src/lib/secureStore';
 import { getGeminiApiKey, setGeminiApiKey } from '../../src/services/gemini';
 import { useTransactionAutomation } from '../../src/hooks/useTransactionAutomation';
 import { useAlert } from '../../src/context/AlertContext';

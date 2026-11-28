@@ -2,7 +2,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, Platform, Keyboard
 import { useState, useEffect } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useEditTransaction, useDeleteTransaction, useGetTransaction, useGetTransactions, useGetAccounts } from '../../src/hooks/useQueries';
+import { useEditTransaction, useDeleteTransaction, useGetTransaction, useGetTransactions, useGetAccounts, useGetTransactionHistory } from '../../src/hooks/useQueries';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AccountSelector from '../../src/components/AccountSelector';
 import { useAlert } from '../../src/context/AlertContext';
@@ -22,6 +22,7 @@ export default function EditTransactionScreen() {
     const { data: txSingle, isLoading: isLoadingSingle } = useGetTransaction(transactionId);
     const { data: drafts, isLoading: isLoadingDrafts } = useGetTransactions('DRAFT');
     const { data: completed, isLoading: isLoadingCompleted } = useGetTransactions('COMPLETED');
+    const { data: history } = useGetTransactionHistory(transactionId);
 
     // Use loose equality (==) for ID check to handle string/number mismatches
     // PRIORITIZE the source that has splits!
@@ -397,6 +398,24 @@ export default function EditTransactionScreen() {
                             thumbColor={'#ffffff'}
                         />
                     </View>
+
+                    {/* Audit history */}
+                    {history && history.length > 0 && (
+                        <View className="mb-6 bg-surface border border-outline rounded-3xl p-4">
+                            <Text className="text-onSurface font-bold mb-2">History</Text>
+                            {history.map((entry) => (
+                                <View key={entry.id} className="flex-row items-center justify-between py-1.5">
+                                    <View className="flex-row items-center">
+                                        <View className="w-2 h-2 rounded-full bg-primary-500 mr-2" />
+                                        <Text className="text-onSurface text-sm font-medium">{entry.action}</Text>
+                                    </View>
+                                    <Text className="text-onSurfaceVariant text-xs">
+                                        {new Date(entry.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                    </Text>
+                                </View>
+                            ))}
+                        </View>
+                    )}
 
                     {/* Delete Button */}
                     <TouchableOpacity

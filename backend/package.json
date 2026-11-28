@@ -5,10 +5,15 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "node dist/index.js",
-    "dev": "nodemon src/index.ts",
+    "dev": "nodemon --exec ts-node src/index.ts",
+    "dev:worker": "ts-node src/worker.ts",
     "build": "tsc",
     "prisma:generate": "prisma generate",
-    "prisma:push": "prisma db push"
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate deploy",
+    "db:dev": "prisma migrate dev",
+    "db:dedupe": "ts-node scripts/dedupe-accounts.ts",
+    "db:backfill-networth": "ts-node scripts/backfill-networth.ts"
   },
   "keywords": [],
   "author": "SUBIN",
@@ -23,9 +28,11 @@
   "homepage": "https://github.com/subinps/fintrack#readme",
   "dependencies": {
     "@prisma/client": "^5.10.2",
+    "@types/cookie-parser": "^1.4.10",
     "@types/node-cron": "^3.0.11",
     "axios": "^1.6.7",
     "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "exceljs": "^4.4.0",
@@ -36,9 +43,13 @@
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.11",
+    "pg-boss": "^12.40.0",
+    "pino": "^10.4.0",
+    "pino-http": "^11.0.0",
     "prisma": "^5.10.2",
     "ua-parser-js": "^2.0.6",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

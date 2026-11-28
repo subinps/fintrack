@@ -4,52 +4,48 @@
 
 @layer base {
     :root {
-        --color-primary: 124 58 237;
-        /* Violet 600 - Darker for better contrast on white */
-        --color-primary-foreground: 255 255 255;
+        /* Warm paper + deep green signal — same system as the web app (Signal Deck) */
+        --color-primary: 31 110 90;
+        /* #1F6E5A */
+        --color-primary-foreground: 251 250 247;
 
-        --color-background: 244 244 245;
-        /* Zinc 100 */
-        --color-surface: 255 255 255;
-        /* White */
-        --color-surface-variant: 228 228 231;
-        /* Zinc 200 */
+        --color-background: 247 245 240;
+        /* #F7F5F0 */
+        --color-surface: 254 253 251;
+        --color-surface-variant: 239 235 227;
 
-        --color-on-background: 9 9 11;
-        /* Zinc 950 */
-        --color-on-surface: 24 24 27;
-        /* Zinc 900 */
-        --color-on-surface-variant: 63 63 70;
-        /* Zinc 700 - Much darker for readability */
+        --color-on-background: 29 33 30;
+        --color-on-surface: 29 33 30;
+        --color-on-surface-variant: 90 97 93;
+        /* 5.5:1 on paper */
 
-        --color-outline: 161 161 170;
-        /* Zinc 400 - Visible border */
-        --color-error: 220 38 38;
-        /* Red 600 */
+        --color-outline: 222 218 209;
+        --color-error: 170 57 40;
+        --color-success: 24 106 75;
+        --color-secondary: 24 106 75;
+        --color-warning: 154 90 15;
+        --color-info: 30 100 130;
     }
 
     .dark {
-        --color-primary: 139 92 246;
-        /* Violet 500 */
-        --color-primary-foreground: 255 255 255;
+        --color-primary: 88 181 150;
+        /* #58B596 */
+        --color-primary-foreground: 10 23 16;
 
-        --color-background: 2 6 23;
-        /* Slate 950 */
-        --color-surface: 15 23 42;
-        /* Slate 900 */
-        --color-surface-variant: 30 41 59;
-        /* Slate 800 */
+        --color-background: 13 18 16;
+        /* #0D1210 */
+        --color-surface: 19 26 23;
+        --color-surface-variant: 37 46 42;
 
-        --color-on-background: 248 250 252;
-        /* Slate 50 */
-        --color-on-surface: 241 245 249;
-        /* Slate 100 */
-        --color-on-surface-variant: 148 163 184;
-        /* Slate 400 */
+        --color-on-background: 239 236 229;
+        --color-on-surface: 233 237 234;
+        --color-on-surface-variant: 152 166 160;
 
-        --color-outline: 51 65 85;
-        /* Slate 700 */
-        --color-error: 239 68 68;
-        /* Red 500 */
+        --color-outline: 40 50 45;
+        --color-error: 222 112 96;
+        --color-success: 77 192 160;
+        --color-secondary: 77 192 160;
+        --color-warning: 240 179 77;
+        --color-info: 121 180 220;
     }
 }

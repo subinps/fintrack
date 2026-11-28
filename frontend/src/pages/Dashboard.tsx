@@ -14,11 +14,13 @@ import {
   Plus,
   ReceiptText,
   Search,
+  Trash2,
   UserRound,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { NotificationBell } from '../components/NotificationBell';
 import { CommandPalette } from '../components/CommandPalette';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -32,6 +34,7 @@ const TransactionsTab = lazy(() => import('../components/TransactionsTab').then(
 const ProfileTab = lazy(() => import('../components/ProfileTab').then(module => ({ default: module.ProfileTab })));
 const IncomeExpenseTab = lazy(() => import('../components/IncomeExpenseTab').then(module => ({ default: module.IncomeExpenseTab })));
 const ChartOfAccountsTab = lazy(() => import('../components/ChartOfAccountsTab').then(module => ({ default: module.ChartOfAccountsTab })));
+const TrashTab = lazy(() => import('../components/TrashTab').then(module => ({ default: module.TrashTab })));
 
 const navigation = [
   {
@@ -48,6 +51,7 @@ const navigation = [
     items: [
       { id: 'transactions', label: 'Transactions', icon: ReceiptText, hint: 'Every posted entry' },
       { id: 'chart-of-accounts', label: 'Chart of Accounts', icon: ListTree, hint: 'The account tree' },
+      { id: 'trash', label: 'Trash', icon: Trash2, hint: 'Voided entries you can restore' },
     ],
   },
   {
@@ -73,9 +77,9 @@ function Brand() {
         </svg>
         <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-chart-3" aria-hidden="true" />
       </div>
-      <div className="flex flex-col gap-0.5 whitespace-nowrap">
-        <span className="block text-[15px] font-semibold leading-[1.15] tracking-[-0.02em] text-foreground">FinTrack</span>
-        <span className="block font-mono text-[9px] uppercase leading-none tracking-[0.18em] text-muted-foreground">
+      <div className="flex flex-col gap-1 whitespace-nowrap">
+        <span className="block text-[15px] font-semibold leading-[1.25] tracking-[-0.02em] text-foreground">FinTrack</span>
+        <span className="hidden font-mono text-[9px] uppercase leading-[1.4] tracking-[0.18em] text-muted-foreground sm:block">
           Signal compass
         </span>
       </div>
@@ -267,6 +271,7 @@ export function Dashboard() {
               </div>
 
               <div className="ml-auto flex items-center gap-2">
+                <NotificationBell />
                 <button
                   type="button"
                   onClick={() => setPaletteOpen(true)}
@@ -336,6 +341,7 @@ export function Dashboard() {
                   {activeTab === 'investments' && <InvestmentsTab />}
                   {activeTab === 'accounts' && <BankAccountsTab />}
                   {activeTab === 'chart-of-accounts' && <ChartOfAccountsTab />}
+                  {activeTab === 'trash' && <TrashTab />}
                   {activeTab === 'debts' && <DebtsTab />}
                   {activeTab === 'transactions' && <TransactionsTab initialAddOpen={pendingTransaction} onInitialAddConsumed={() => setPendingTransaction(false)} />}
                   {activeTab === 'income-expense' && <IncomeExpenseTab />}
