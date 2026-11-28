@@ -14,8 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useGetCategories, useAddCategory, useDeleteCategory } from '../hooks/useQueries';
+import { useGetCategories, useAddCategory, useEditCategory, useDeleteCategory } from '../hooks/useQueries';
 import { ScrollArea } from './ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { LedgerViewDialog } from './LedgerViewDialog';
@@ -23,15 +22,20 @@ import api from '../lib/api';
 
 function CategoryManager() {
     const { data: categories, isLoading } = useGetCategories();
+    const { data: accounts } = useGetAccounts();
     const addCategory = useAddCategory();
+    const editCategory = useEditCategory();
     const deleteCategory = useDeleteCategory();
     const [newCategory, setNewCategory] = useState('');
     const [selectedType, setSelectedType] = useState('ASSET');
+    const [search, setSearch] = useState('');
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [editingName, setEditingName] = useState('');
 
     const handleAdd = async () => {
         if (!newCategory.trim()) return;
         try {
-            await addCategory.mutateAsync({ name: newCategory, type: selectedType });
+            await addCategory.mutateAsync({ name: newCategory.trim(), type: selectedType });
             setNewCategory('');
             toast.success('Category added');
         } catch (error) {
@@ -48,19 +52,48 @@ function CategoryManager() {
         }
     };
 
-    const filteredCategories = categories?.filter(c => c.type === selectedType) || [];
+    const startEdit = (id: number, name: string) => {
+        setEditingId(id);
+        setEditingName(name);
+    };
+
+    const saveEdit = async () => {
+        if (editingId === null || !editingName.trim()) return;
+        try {
+            await editCategory.mutateAsync({ id: editingId, name: editingName.trim() });
+            toast.success('Category updated');
+            setEditingId(null);
+        } catch (error: any) {
+            toast.error(error?.response?.data?.error || 'Failed to update category');
+        }
+    };
+
+    const usage = useMemo(() => {
+        const counts = new Map<string, number>();
+        for (const account of accounts || []) {
+            if (!account.subType) continue;
+            const key = `${account.type}:${account.subType}`;
+            counts.set(key, (counts.get(key) || 0) + 1);
+        }
+        return counts;
+    }, [accounts]);
+
+    const filteredCategories = (categories || []).filter(
+        (c) => c.type === selectedType && (!search.trim() || c.name.toLowerCase().includes(search.trim().toLowerCase())),
+    );
 
     return (
-        <div className="flex flex-col h-full gap-4">
-            <div className="flex gap-2">
-                {['ASSET', 'LIABILITY', 'INCOME', 'EXPENSE'].map(type => (
+        <div className="flex h-full flex-col gap-4">
+            <div className="flex flex-wrap gap-2">
+                {['ASSET', 'LIABILITY', 'INCOME', 'EXPENSE', 'EQUITY'].map(type => (
                     <Button
                         key={type}
-                        variant={selectedType === type ? "default" : "outline"}
+                        variant={selectedType === type ? 'default' : 'outline'}
                         size="sm"
-                        onClick={() => setSelectedType(type)}
+                        className="shrink-0"
+                        onClick={() => { setSelectedType(type); setEditingId(null); }}
                     >
-                        {type}
+                        {type.charAt(0) + type.slice(1).toLowerCase()}
                     </Button>
                 ))}
             </div>
@@ -71,43 +104,106 @@ function CategoryManager() {
                     onChange={(e) => setNewCategory(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
                 />
-                <Button onClick={handleAdd} disabled={addCategory.isPending}>Add</Button>
+                <Button onClick={handleAdd} disabled={addCategory.isPending} className="shrink-0">Add</Button>
             </div>
-            <div className="border rounded-md flex-1 overflow-hidden">
+            <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Filter categories" className="pl-9" />
+            </div>
+            <div className="flex-1 overflow-hidden rounded-md border">
                 <ScrollArea className="h-[300px]">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead className="w-[100px] text-right">Action</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isLoading ? (
-                                <TableRow><TableCell colSpan={2} className="text-center">Loading...</TableCell></TableRow>
-                            ) : filteredCategories.length === 0 ? (
-                                <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground">No custom categories found.</TableCell></TableRow>
-                            ) : (
-                                filteredCategories.map(cat => (
-                                    <TableRow key={cat.id}>
-                                        <TableCell>{cat.name}</TableCell>
-                                        <TableCell className="text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 text-destructive"
-                                                onClick={() => handleDelete(cat.id)}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                    {isLoading ? (
+                        <div className="space-y-2 p-3">
+                            {[0, 1, 2, 3].map(i => <Skeleton key={i} className="h-9 w-full" />)}
+                        </div>
+                    ) : filteredCategories.length === 0 ? (
+                        <p className="p-6 text-center text-sm text-muted-foreground">
+                            {search.trim() ? `No ${selectedType.toLowerCase()} categories match "${search.trim()}".` : `No ${selectedType.toLowerCase()} categories yet — add one above.`}
+                        </p>
+                    ) : (
+                        <ul className="divide-y">
+                            {filteredCategories.map(cat => {
+                                const used = usage.get(`${cat.type}:${cat.name}`) || 0;
+                                const isEditing = editingId === cat.id;
+                                return (
+                                    <li key={cat.id} className="flex min-h-11 items-center gap-2 px-3 py-1.5">
+                                        {isEditing ? (
+                                            <>
+                                                <Input
+                                                    autoFocus
+                                                    value={editingName}
+                                                    onChange={(e) => setEditingName(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') saveEdit();
+                                                        if (e.key === 'Escape') setEditingId(null);
+                                                    }}
+                                                    className="h-9 min-w-0"
+                                                    aria-label={`Rename ${cat.name}`}
+                                                />
+                                                <Button size="sm" className="shrink-0" onClick={saveEdit} disabled={editCategory.isPending} aria-label={`Save ${cat.name}`}>
+                                                    <Check className="h-4 w-4" />
+                                                </Button>
+                                                <Button size="sm" variant="ghost" className="shrink-0" onClick={() => setEditingId(null)}>Cancel</Button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="min-w-0 flex-1 truncate text-sm">{cat.name}</span>
+                                                <span className="shrink-0 whitespace-nowrap text-[11px] text-muted-foreground">
+                                                    {used > 0 ? `${used} account${used === 1 ? '' : 's'}` : 'unused'}
+                                                </span>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-9 w-9 shrink-0"
+                                                    aria-label={`Edit ${cat.name}`}
+                                                    onClick={() => startEdit(cat.id, cat.name)}
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-9 w-9 shrink-0 text-destructive"
+                                                            aria-label={`Delete ${cat.name}`}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Delete "{cat.name}"?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                It disappears from pickers, filters and reports.
+                                                                {used > 0
+                                                                    ? ` ${used} account${used === 1 ? '' : 's'} still use it and keep the label.`
+                                                                    : ' No account is using it.'}
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction
+                                                                onClick={() => handleDelete(cat.id)}
+                                                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                            >
+                                                                Delete
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </>
+                                        )}
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
                 </ScrollArea>
             </div>
+            <p className="text-[11px] text-muted-foreground">
+                Renaming a category renames the accounts that use it, so pickers and reports stay in step. Delete only removes the label; accounts keep theirs.
+            </p>
         </div>
     );
 }
@@ -349,7 +445,7 @@ export function ChartOfAccountsTab() {
                             <DialogHeader>
                                 <DialogTitle>Manage Categories</DialogTitle>
                                 <DialogDescription>
-                                    Add or remove custom categories for your accounts.
+                                    Every category your accounts, budgets and transactions can use. Renaming one renames the accounts that use it.
                                 </DialogDescription>
                             </DialogHeader>
                             <CategoryManager />

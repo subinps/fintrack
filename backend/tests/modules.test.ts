@@ -82,6 +82,61 @@ describe('transaction tags', () => {
     });
 });
 
+describe('categories', () => {
+    it('lists the default categories for every type, not just used ones', async () => {
+        const res = await api('/api/categories', { token: user.token });
+        assert.equal(res.status, 200);
+        const names = (type: string) => res.body.filter((c: any) => c.type === type).map((c: any) => c.name);
+        for (const [type, expected] of Object.entries({
+            ASSET: 'Savings',
+            LIABILITY: 'Credit Card',
+            INCOME: 'Salary',
+            EXPENSE: 'Groceries',
+            EQUITY: 'Capital',
+        })) {
+            assert.ok(names(type).includes(expected), `${type} should include the default "${expected}"`);
+        }
+    });
+
+    it('renames a category and the accounts that use it', async () => {
+        const categories = await api('/api/categories', { token: user.token });
+        const groceries = categories.body.find((c: any) => c.type === 'EXPENSE' && c.name === 'Groceries');
+        assert.ok(groceries, 'default Groceries category should exist');
+
+        const accountId = await createAccount(user, 'Big Basket', 'EXPENSE', 'Groceries');
+        const renamed = await api(`/api/categories/${groceries.id}`, {
+            method: 'PATCH',
+            token: user.token,
+            body: { name: 'Food & Groceries' },
+        });
+        assert.equal(renamed.status, 200);
+        assert.equal(renamed.body.name, 'Food & Groceries');
+
+        const accounts = await api('/api/accounts', { token: user.token });
+        const account = accounts.body.find((a: any) => a.id === accountId);
+        assert.equal(account.subType, 'Food & Groceries', 'accounts should follow the rename');
+    });
+
+    it('does not resurrect a renamed or deleted default on later reads', async () => {
+        const before = await api('/api/categories', { token: user.token });
+        assert.ok(!before.body.some((c: any) => c.type === 'EXPENSE' && c.name === 'Groceries'), 'renamed default should stay renamed');
+        const groceries = before.body.find((c: any) => c.type === 'EXPENSE' && c.name === 'Food & Groceries');
+        assert.ok(groceries, 'the renamed category should still be listed');
+    });
+
+    it('rejects a rename that collides with an existing category', async () => {
+        const categories = await api('/api/categories', { token: user.token });
+        const rent = categories.body.find((c: any) => c.type === 'EXPENSE' && c.name === 'Food & Groceries');
+        const food = categories.body.find((c: any) => c.type === 'EXPENSE' && c.name === 'Food');
+        const res = await api(`/api/categories/${rent.id}`, {
+            method: 'PATCH',
+            token: user.token,
+            body: { name: food.name },
+        });
+        assert.equal(res.status, 409);
+    });
+});
+
 describe('reports', () => {
     it('builds a profit and loss from the ledger', async () => {
         const pnl = await api(`/api/reports/pnl?from=${monthStart}&to=${today}`, { token: user.token });

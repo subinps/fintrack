@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useGetAccounts, useAddTransaction, useEditTransaction, useAddAccount, Transaction } from '../hooks/useQueries';
+import { useGetAccounts, useAddTransaction, useEditTransaction, useAddAccount, useTransactionTags, Transaction } from '../hooks/useQueries';
 import { Plus, Trash2, PlusCircle, ArrowRight, ChevronsUpDown, Check } from 'lucide-react';
+import { TagEditor } from './TagEditor';
 import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -157,6 +158,7 @@ function CreateAccountDialog({ open, onOpenChange }: { open: boolean; onOpenChan
 
 export function TransactionDialog({ open, onOpenChange, transaction, onSuccess }: TransactionDialogProps) {
     const { data: accounts } = useGetAccounts();
+    const { data: knownTags } = useTransactionTags();
     const addTransaction = useAddTransaction();
     const editTransaction = useEditTransaction();
     const addAccount = useAddAccount();
@@ -164,6 +166,11 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSuccess }
     const [createAccountOpen, setCreateAccountOpen] = useState(false);
     const [mode, setMode] = useState<'simple' | 'advanced'>('simple');
     const [tagInput, setTagInput] = useState('');
+    const tagList = useMemo(
+        () => tagInput.split(',').map((tag) => tag.trim()).filter(Boolean),
+        [tagInput]
+    );
+    const tagSuggestions = useMemo(() => (knownTags ?? []).map((tag) => tag.name), [knownTags]);
 
     // Simple Mode State
     const [simpleForm, setSimpleForm] = useState({
@@ -542,6 +549,13 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSuccess }
                                     onChange={(e) => setSimpleForm({ ...simpleForm, description: e.target.value })}
                                 />
                             </div>
+
+                            <TagEditor
+                                id="transaction-tags-simple"
+                                tags={tagList}
+                                onChange={(tags) => setTagInput(tags.join(', '))}
+                                suggestions={tagSuggestions}
+                            />
                         </TabsContent>
 
                         <TabsContent value="advanced" className="space-y-4 py-4">
@@ -563,6 +577,13 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSuccess }
                                     />
                                 </div>
                             </div>
+
+                            <TagEditor
+                                id="transaction-tags-advanced"
+                                tags={tagList}
+                                onChange={(tags) => setTagInput(tags.join(', '))}
+                                suggestions={tagSuggestions}
+                            />
 
                             <div className="space-y-2">
                                 <Label>Splits</Label>
@@ -633,22 +654,6 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSuccess }
                                 </Button>
                             </div>
                         </TabsContent>
-
-                        <div className="mt-4 space-y-2">
-                            <Label htmlFor="transaction-tags" className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
-                                Tags
-                            </Label>
-                            <Input
-                                id="transaction-tags"
-                                value={tagInput}
-                                onChange={(e) => setTagInput(e.target.value)}
-                                placeholder="travel, reimbursable, joint"
-                                autoComplete="off"
-                            />
-                            <p className="text-[11px] text-muted-foreground">
-                                Comma separated. Tags make filtering and saved views quick.
-                            </p>
-                        </div>
 
                         <DialogFooter className="mt-6">
                             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

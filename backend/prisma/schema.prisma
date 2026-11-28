@@ -21,6 +21,8 @@ model User {
   timezone                String    @default("Asia/Kolkata")
   /// Kill switch for every automation of this user
   automationPaused        Boolean   @default(false)
+  /// Default categories were seeded once; renames/deletes of them stick
+  categoriesSeeded        Boolean   @default(false)
 
   sessions           Session[]
   accounts           Account[]

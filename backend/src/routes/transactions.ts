@@ -123,7 +123,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
 router.get('/tags', authenticateToken, async (req: AuthRequest, res) => {
     try {
         const rows = await prisma.transaction.findMany({
-            where: { userId: req.user?.id },
+            where: { userId: req.user?.id, deletedAt: null },
             select: { tags: true },
             take: 5000,
         });

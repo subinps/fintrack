@@ -15,8 +15,9 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { Check, ChevronsUpDown, FileInput } from 'lucide-react';
+import { Check, ChevronsUpDown, FileInput, Hash } from 'lucide-react';
 import { ImportTransactionDialog } from './ImportTransactionDialog';
+import { TagEditor } from './TagEditor';
 import { useCreateRuleFromTransaction } from '../hooks/useRecurring';
 import { format, isToday, isYesterday } from 'date-fns';
 
@@ -187,7 +188,17 @@ export function TransactionsTab({
   const [maxAmount, setMaxAmount] = useState('');
   const [transactionType, setTransactionType] = useState<string>('all');
   const [filterTag, setFilterTag] = useState<string>('all');
+  const [tagPickerOpen, setTagPickerOpen] = useState(false);
+  const [tagSearch, setTagSearch] = useState('');
+  const [tagInput, setTagInput] = useState('');
   const { data: availableTags } = useTransactionTags();
+  const tagList = useMemo(() => tagInput.split(',').map((tag) => tag.trim()).filter(Boolean), [tagInput]);
+  const tagSuggestions = useMemo(() => (availableTags ?? []).map((tag) => tag.name), [availableTags]);
+  const typedTag = tagSearch.trim();
+  const visibleTags = useMemo(
+    () => (availableTags ?? []).filter((tag) => !typedTag || tag.name.toLowerCase().includes(typedTag.toLowerCase())),
+    [availableTags, typedTag]
+  );
 
   useEffect(() => {
     if (initialFilterAccountId) {
@@ -203,7 +214,7 @@ export function TransactionsTab({
   }, [initialAddOpen, onInitialAddConsumed]);
 
   // Hybrid Query Logic
-  const isFiltered = filterAccountId !== 'all' || !!startDate || !!endDate || !!searchQuery || !!minAmount || !!maxAmount || transactionType !== 'all';
+  const isFiltered = filterAccountId !== 'all' || !!startDate || !!endDate || !!searchQuery || !!minAmount || !!maxAmount || transactionType !== 'all' || filterTag !== 'all';
 
   const {
     data: infiniteData,
@@ -271,7 +282,7 @@ export function TransactionsTab({
         }
 
         // 6. Tag Filter
-        const matchesTag = filterTag === 'all' || ((t as any).tags ?? []).includes(filterTag);
+        const matchesTag = filterTag === 'all' || (t.tags ?? []).some((tag) => tag.toLowerCase() === filterTag.toLowerCase());
 
         return matchesAccount && matchesDate && matchesSearch && matchesAmount && matchesType && matchesTag;
       });
@@ -510,6 +521,7 @@ export function TransactionsTab({
           description,
           date,
           splits,
+          tags: tagList,
         });
         toast.success('Transaction updated successfully');
       } else {
@@ -517,6 +529,7 @@ export function TransactionsTab({
           description,
           date,
           splits,
+          tags: tagList,
         });
         toast.success('Transaction added successfully');
       }
@@ -546,12 +559,14 @@ export function TransactionsTab({
       description: '',
       date: new Date().toISOString().split('T')[0],
     });
+    setTagInput('');
     setMode('simple');
   };
 
   const handleEdit = (transaction: Transaction) => {
     setEditingId(transaction.id);
     setMode('advanced');
+    setTagInput((transaction.tags ?? []).join(', '));
     setAdvancedForm({
       description: transaction.description,
       date: new Date(transaction.date).toISOString().split('T')[0],
@@ -726,19 +741,67 @@ export function TransactionsTab({
                 ))}
               </SelectContent>
             </Select>
-            <Select value={filterTag} onValueChange={setFilterTag}>
-              <SelectTrigger aria-label="Filter by tag">
-                <SelectValue placeholder="Filter by tag" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All tags</SelectItem>
-                {(availableTags ?? []).map((tag) => (
-                  <SelectItem key={tag.name} value={tag.name}>
-                    #{tag.name} ({tag.count})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={tagPickerOpen} onOpenChange={(next) => { setTagPickerOpen(next); if (!next) setTagSearch(''); }}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={tagPickerOpen}
+                  aria-label="Filter by tag"
+                  className="justify-between font-normal"
+                >
+                  <span className="truncate">{filterTag === 'all' ? 'Filter by tag' : `#${filterTag}`}</span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 space-y-2 p-2" align="start">
+                <Input
+                  value={tagSearch}
+                  onChange={(e) => setTagSearch(e.target.value)}
+                  placeholder="Find or type a tag…"
+                  aria-label="Find or type a tag"
+                  className="h-9"
+                  autoFocus
+                />
+                <div className="max-h-64 space-y-0.5 overflow-y-auto">
+                  <button
+                    type="button"
+                    onClick={() => { setFilterTag('all'); setTagPickerOpen(false); setTagSearch(''); }}
+                    className="flex min-h-11 w-full items-center gap-2 rounded-md px-2 text-left text-sm transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                  >
+                    <Check className={cn('h-4 w-4 shrink-0', filterTag === 'all' ? 'opacity-100' : 'opacity-0')} />
+                    All tags
+                  </button>
+                  {visibleTags.map((tag) => (
+                    <button
+                      key={tag.name}
+                      type="button"
+                      onClick={() => { setFilterTag(tag.name); setTagPickerOpen(false); setTagSearch(''); }}
+                      className="flex min-h-11 w-full items-center gap-2 rounded-md px-2 text-left text-sm transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                    >
+                      <Check className={cn('h-4 w-4 shrink-0', filterTag === tag.name ? 'opacity-100' : 'opacity-0')} />
+                      <span className="truncate">#{tag.name}</span>
+                      <span className="ml-auto pl-2 text-xs tabular-nums text-muted-foreground">{tag.count}</span>
+                    </button>
+                  ))}
+                  {typedTag && !(availableTags ?? []).some((tag) => tag.name.toLowerCase() === typedTag.toLowerCase()) && (
+                    <button
+                      type="button"
+                      onClick={() => { setFilterTag(typedTag); setTagPickerOpen(false); setTagSearch(''); }}
+                      className="flex min-h-11 w-full items-center gap-2 rounded-md px-2 text-left text-sm transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                    >
+                      <Hash className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="truncate">Filter by {typedTag}</span>
+                    </button>
+                  )}
+                  {(availableTags ?? []).length === 0 && !typedTag && (
+                    <p className="px-2 py-2 text-xs text-muted-foreground">
+                      No tags yet. Add one under Tags in any transaction, or type a tag name here.
+                    </p>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
             <Select value={transactionType} onValueChange={setTransactionType}>
               <SelectTrigger>
                 <SelectValue placeholder="Type" />
@@ -848,7 +911,26 @@ export function TransactionsTab({
 
         {filteredTransactions.length === 0 && !transactionsLoading && (
           <div className="text-center py-20 text-muted-foreground">
-            <p>No transactions found.</p>
+            <p>{filterTag !== 'all' ? `No transactions tagged #${filterTag}.` : 'No transactions found.'}</p>
+            {isFiltered && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => {
+                  setFilterAccountId('all');
+                  setStartDate('');
+                  setEndDate('');
+                  setSearchQuery('');
+                  setMinAmount('');
+                  setMaxAmount('');
+                  setTransactionType('all');
+                  setFilterTag('all');
+                }}
+              >
+                Clear filters
+              </Button>
+            )}
           </div>
         )}
 
@@ -982,6 +1064,13 @@ export function TransactionsTab({
                     className="rounded-xl"
                   />
                 </div>
+
+                <TagEditor
+                  id="transaction-tags-simple"
+                  tags={tagList}
+                  onChange={(tags) => setTagInput(tags.join(', '))}
+                  suggestions={tagSuggestions}
+                />
               </TabsContent>
 
               <TabsContent value="advanced" className="space-y-4 py-4">
@@ -1005,6 +1094,13 @@ export function TransactionsTab({
                     />
                   </div>
                 </div>
+
+                <TagEditor
+                  id="transaction-tags-advanced"
+                  tags={tagList}
+                  onChange={(tags) => setTagInput(tags.join(', '))}
+                  suggestions={tagSuggestions}
+                />
 
                 <div className="space-y-2">
                   <Label>Splits</Label>
