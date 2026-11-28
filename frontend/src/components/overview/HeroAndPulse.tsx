@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { formatINR } from '@/lib/finance';
 import type { CashflowPoint, HealthScore } from '@/lib/finance';
 import { CompassGauge, DeltaChip, MeterRow, SectionHeading, Sparkline, ToneDot } from './primitives';
+import { Money } from '@/components/system/Money';
 
 export function PageHeader({
   rangeControl,
@@ -18,20 +19,20 @@ export function PageHeader({
       <div className="max-w-2xl">
         <p className="eyebrow flex items-center gap-2">
           <ToneDot tone="positive" />
-          Workspace overview
+          Net worth · this month
         </p>
         <h1 className="mt-3 text-headline text-balance text-foreground">
-          Know what changed before the standup
+          Your money, in one calm, honest view.
         </h1>
         <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-muted-foreground">
-          Live balances, cash-flow trends and annotated signals from every account — so the next
-          decision starts from evidence, not a hunch.
+          Every double-entry ledger behind one clear number — assets, debts and this month's
+          spending grouped by what they mean, so the next decision starts from evidence.
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {rangeControl}
         <Button size="sm" onClick={onNewTransaction} className="gap-1.5">
-          New entry
+          New transaction
           <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
         </Button>
       </div>
@@ -77,7 +78,7 @@ export function NetWorthHero({
 
         <div className="mt-5 flex flex-wrap items-end gap-x-6 gap-y-3">
           <p className="stat-hero text-[clamp(2.6rem,2rem+3vw,3.9rem)] text-foreground">
-            {formatINR(netWorth)}
+            <Money paise={netWorth} animate />
           </p>
           <div className="flex flex-col gap-1.5 pb-1">
             <DeltaChip value={changePct} suffix="vs last month" />

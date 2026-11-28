@@ -23,6 +23,16 @@ export default {
                 sans: ['Inter Variable', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
                 mono: ['JetBrains Mono Variable', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace']
             },
+            transitionDuration: {
+                feedback: 'var(--dur-feedback)',
+                layout: 'var(--dur-layout)',
+                scene: 'var(--dur-scene)'
+            },
+            transitionTimingFunction: {
+                vault: 'var(--ease-out)',
+                'vault-in-out': 'var(--ease-in-out)',
+                spring: 'var(--ease-spring)'
+            },
             fontSize: {
                 '2xs': ['0.6875rem', { lineHeight: '1rem', letterSpacing: '0.08em' }],
                 micro: ['0.625rem', { lineHeight: '0.875rem', letterSpacing: '0.12em' }],
@@ -30,7 +40,12 @@ export default {
                 'display-sm': ['clamp(1.5rem, 1.1rem + 1.4vw, 2rem)', { lineHeight: '1.1', letterSpacing: '-0.03em', fontWeight: '600' }],
                 hero: ['clamp(2.4rem, 1.7rem + 2.6vw, 3.6rem)', { lineHeight: '0.98', letterSpacing: '-0.045em', fontWeight: '600' }],
                 stat: ['clamp(1.6rem, 1.25rem + 1.4vw, 2.1rem)', { lineHeight: '1.05', letterSpacing: '-0.035em', fontWeight: '600' }],
-                headline: ['clamp(1.55rem, 1.3rem + 1vw, 2.05rem)', { lineHeight: '1.12', letterSpacing: '-0.03em', fontWeight: '600' }]
+                headline: ['clamp(1.55rem, 1.3rem + 1vw, 2.05rem)', { lineHeight: '1.12', letterSpacing: '-0.03em', fontWeight: '600' }],
+                'title-lg': ['1.15rem', { lineHeight: '1.3', letterSpacing: '-0.02em', fontWeight: '600' }],
+                title: ['0.95rem', { lineHeight: '1.4', letterSpacing: '-0.01em', fontWeight: '600' }],
+                body: ['0.875rem', { lineHeight: '1.6' }],
+                small: ['0.8125rem', { lineHeight: '1.5' }],
+                caption: ['0.75rem', { lineHeight: '1.4' }]
             },
             colors: {
                 border: {
@@ -88,7 +103,40 @@ export default {
                     2: 'hsl(var(--chart-2))',
                     3: 'hsl(var(--chart-3))',
                     4: 'hsl(var(--chart-4))',
-                    5: 'hsl(var(--chart-5))'
+                    5: 'hsl(var(--chart-5))',
+                    6: 'hsl(var(--chart-6))',
+                    7: 'hsl(var(--chart-7))',
+                    8: 'hsl(var(--chart-8))'
+                },
+                /* Semantic money colours: hue carries the meaning, never decoration */
+                income: {
+                    DEFAULT: 'hsl(var(--income))',
+                    foreground: 'hsl(var(--income-foreground))'
+                },
+                expense: {
+                    DEFAULT: 'hsl(var(--expense))',
+                    foreground: 'hsl(var(--expense-foreground))'
+                },
+                assets: 'hsl(var(--assets))',
+                liabilities: 'hsl(var(--liabilities))',
+                equity: 'hsl(var(--equity))',
+                investments: 'hsl(var(--investments))',
+                savings: 'hsl(var(--savings))',
+                info: 'hsl(var(--info))',
+                /* D1.3 twelve-hue account and category palette */
+                cat: {
+                    1: 'hsl(var(--cat-1))',
+                    2: 'hsl(var(--cat-2))',
+                    3: 'hsl(var(--cat-3))',
+                    4: 'hsl(var(--cat-4))',
+                    5: 'hsl(var(--cat-5))',
+                    6: 'hsl(var(--cat-6))',
+                    7: 'hsl(var(--cat-7))',
+                    8: 'hsl(var(--cat-8))',
+                    9: 'hsl(var(--cat-9))',
+                    10: 'hsl(var(--cat-10))',
+                    11: 'hsl(var(--cat-11))',
+                    12: 'hsl(var(--cat-12))'
                 }
             },
             borderRadius: {

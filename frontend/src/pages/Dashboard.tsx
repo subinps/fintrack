@@ -10,6 +10,7 @@ import {
   Compass,
   CreditCard,
   Landmark,
+  LifeBuoy,
   LineChart,
   ListTree,
   LogOut,
@@ -53,6 +54,7 @@ const ReconcileTab = lazy(() => import('../components/ReconcileTab').then(module
 const ReportsTab = lazy(() => import('../components/ReportsTab').then(module => ({ default: module.ReportsTab })));
 const TaxTab = lazy(() => import('../components/TaxTab').then(module => ({ default: module.TaxTab })));
 const InsightsTab = lazy(() => import('../components/InsightsTab').then(module => ({ default: module.InsightsTab })));
+const HelpTab = lazy(() => import('../components/HelpTab').then(module => ({ default: module.HelpTab })));
 
 const navigation = [
   {
@@ -94,6 +96,7 @@ const navigation = [
   {
     group: 'Account',
     items: [
+      { id: 'help', label: 'Help', icon: LifeBuoy, hint: 'Eight guides in plain language' },
       { id: 'connect-ai', label: 'Connect to AI', icon: Sparkles, hint: 'Keys, drafts and activity' },
       { id: 'profile', label: 'Profile', icon: UserRound, hint: 'Data and preferences' },
     ],
@@ -104,7 +107,7 @@ const navItems = navigation.flatMap((group) => group.items);
 
 function Brand() {
   return (
-    <div className="flex items-center gap-2.5">
+    <div className="flex shrink-0 items-center gap-2.5">
       <div className="relative flex h-9 w-9 items-center justify-center rounded-panel border border-primary/25 bg-primary-soft">
         <svg viewBox="0 0 24 24" className="h-5 w-5 text-primary" fill="none" aria-hidden="true">
           <circle cx="12" cy="12" r="8.25" stroke="currentColor" strokeWidth="1.25" opacity="0.5" />
@@ -116,7 +119,7 @@ function Brand() {
       <div className="flex flex-col gap-1 whitespace-nowrap">
         <span className="block text-[15px] font-semibold leading-[1.25] tracking-[-0.02em] text-foreground">FinTrack</span>
         <span className="hidden font-mono text-[9px] uppercase leading-[1.4] tracking-[0.18em] text-muted-foreground sm:block">
-          Signal compass
+          Private ledger
         </span>
       </div>
     </div>
@@ -271,7 +274,7 @@ export function Dashboard() {
 
         <div className="flex min-h-screen min-w-0 flex-col">
           {/* Top bar */}
-          <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md supports-[backdrop-filter]:bg-background/75">
+          <header className="sticky top-0 z-40 border-b border-border bg-background">
             <div className="flex h-14 items-center gap-3 px-4 sm:px-6 lg:px-8">
               <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
                 <SheetTrigger asChild>
@@ -345,7 +348,7 @@ export function Dashboard() {
                   }}
                 >
                   <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-                  New entry
+                  New transaction
                 </Button>
                 <div className="hidden sm:block lg:hidden">
                   <ThemeToggle />
@@ -398,6 +401,7 @@ export function Dashboard() {
                   {activeTab === 'connect-ai' && <ConnectAiTab />}
                   {activeTab === 'income-expense' && <IncomeExpenseTab />}
                   {activeTab === 'profile' && <ProfileTab />}
+                  {activeTab === 'help' && <HelpTab />}
                 </Suspense>
               </motion.div>
             </div>
