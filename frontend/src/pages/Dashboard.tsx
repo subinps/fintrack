@@ -139,7 +139,7 @@ function NavButton({
     <button
       type="button"
       onClick={() => onSelect(item.id)}
-      aria-label={compact ? `Go to ${item.label}` : `${item.label} tab`}
+      aria-label={item.label}
       aria-current={active ? 'page' : undefined}
       className={cn(
         'group relative flex w-full items-center gap-3 rounded-control px-3 text-left transition-[background-color,color,box-shadow] duration-150',

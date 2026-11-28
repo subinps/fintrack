@@ -147,7 +147,7 @@ export async function balanceSheet(userId: string, asOf: Date): Promise<BalanceS
 
     const assets = linesFrom(assetMap, 'ASSET');
     const liabilities = linesFrom(liabilityMap, 'LIABILITY').map((line) => ({ ...line, amount: formatPaise(-rupeesToPaise(line.amount)) }));
-    const equity = linesFrom(equityMap, 'EQUITY');
+    const equity = linesFrom(equityMap, 'EQUITY').map((line) => ({ ...line, amount: formatPaise(-rupeesToPaise(line.amount)) }));
 
     const sum = (map: Map<number, { amount: bigint }>) => [...map.values()].reduce((total, value) => total + value.amount, 0n);
     const incomeTotal = -sum(incomeMap);

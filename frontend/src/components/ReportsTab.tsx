@@ -120,8 +120,8 @@ export function ReportsTab() {
       </header>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid w-full grid-cols-4 sm:w-auto sm:inline-grid">
-          <TabsTrigger value="pnl">Profit & loss</TabsTrigger>
+        <TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
+          <TabsTrigger value="pnl">Profit and loss</TabsTrigger>
           <TabsTrigger value="balance">Balance sheet</TabsTrigger>
           <TabsTrigger value="cash">Cash flow</TabsTrigger>
           <TabsTrigger value="trial">Trial balance</TabsTrigger>
@@ -146,8 +146,8 @@ export function ReportsTab() {
 
 function SectionHeader({ title, description, action }: { title: string; description: string; action?: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-2">
-      <div>
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+      <div className="min-w-0">
         <h2 className="text-lg font-semibold tracking-tight text-foreground">{title}</h2>
         <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
       </div>
@@ -168,8 +168,8 @@ function LineTable({ title, lines, total, totalLabel, tone }: { title: string; l
         <ul className="divide-y divide-border rounded-control border border-border">
           {lines.map((line) => (
             <li key={line.accountId} className="flex items-center justify-between gap-3 px-3 py-2">
-              <span className="truncate text-sm text-foreground">{line.name}</span>
-              <span className={cn('font-mono text-sm tabular-nums', tone === 'income' ? 'text-success' : 'text-foreground')}>
+              <span className="min-w-0 truncate text-sm text-foreground">{line.name}</span>
+              <span className={cn('shrink-0 whitespace-nowrap font-mono text-sm tabular-nums', tone === 'income' ? 'text-success' : 'text-foreground')}>
                 {signed(line.amount)}
               </span>
             </li>
@@ -220,9 +220,9 @@ function PnlPanel({ from, to, compare, setCompare, onExport }: { from: string; t
       </div>
 
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-4">
           <SectionHeader
-            title={`Profit & loss · ${data.from} → ${data.to}`}
+            title={`Profit and loss · ${data.from} → ${data.to}`}
             description={data.prior ? 'Compared with the previous period of equal length.' : 'Income less expenses, straight from your ledger.'}
             action={
               <div className="flex items-center gap-2">
@@ -238,8 +238,8 @@ function PnlPanel({ from, to, compare, setCompare, onExport }: { from: string; t
           />
         </CardHeader>
         <CardContent className="grid gap-6 lg:grid-cols-2">
-          <LineTable title="Income" lines={data.income} total={data.totalIncome} totalLabel="Total income" tone="income" />
-          <LineTable title="Expenses" lines={data.expenses} total={data.totalExpenses} totalLabel="Total expenses" tone="expense" />
+          <LineTable title="Income by account" lines={data.income} total={data.totalIncome} totalLabel="Total income" tone="income" />
+          <LineTable title="Expenses by account" lines={data.expenses} total={data.totalExpenses} totalLabel="Total expenses" tone="expense" />
         </CardContent>
       </Card>
     </div>
@@ -306,10 +306,10 @@ function BalancePanel({ asOf, onExport }: { asOf: string; onExport: (rows: (stri
         </CardHeader>
         <CardContent className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-4">
-            <LineList title="Assets" lines={data.assets} total={data.totalAssets} />
+            <LineList title="Assets" lines={data.assets} total={data.totalAssets} totalLabel="Total assets" />
           </div>
           <div className="space-y-4">
-            <LineList title="Liabilities" lines={data.liabilities} total={data.totalLiabilities} />
+            <LineList title="Liabilities" lines={data.liabilities} total={data.totalLiabilities} totalLabel="Total liabilities" />
             <LineList title="Equity" lines={data.equity} total={data.totalEquity} extra={{ label: 'Retained earnings', value: data.retainedEarnings }} total2={data.totalLiabilitiesAndEquity} />
           </div>
         </CardContent>
@@ -318,28 +318,28 @@ function BalancePanel({ asOf, onExport }: { asOf: string; onExport: (rows: (stri
   );
 }
 
-function LineList({ title, lines, total, extra, total2 }: { title: string; lines: PnlLine[]; total: string; extra?: { label: string; value: string }; total2?: string }) {
+function LineList({ title, lines, total, totalLabel, extra, total2 }: { title: string; lines: PnlLine[]; total: string; totalLabel?: string; extra?: { label: string; value: string }; total2?: string }) {
   return (
     <div>
       <p className="eyebrow mb-2">{title}</p>
       <ul className="divide-y divide-border rounded-control border border-border">
         {lines.length === 0 && <li className="px-3 py-4 text-xs text-muted-foreground">Nothing here yet.</li>}
         {lines.map((line) => (
-          <li key={line.accountId} className="flex items-center justify-between px-3 py-2 text-sm">
-            <span className="truncate text-foreground">{line.name}</span>
-            <span className="font-mono tabular-nums text-foreground">{money(line.amount)}</span>
+          <li key={line.accountId} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+            <span className="min-w-0 truncate text-foreground">{line.name}</span>
+            <span className="shrink-0 whitespace-nowrap font-mono tabular-nums text-foreground">{signed(line.amount)}</span>
           </li>
         ))}
         {extra && (
-          <li className="flex items-center justify-between px-3 py-2 text-sm">
-            <span className="text-muted-foreground">{extra.label}</span>
-            <span className="font-mono tabular-nums text-foreground">{signed(extra.value)}</span>
+          <li className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+            <span className="min-w-0 truncate text-muted-foreground">{extra.label}</span>
+            <span className="shrink-0 whitespace-nowrap font-mono tabular-nums text-foreground">{signed(extra.value)}</span>
           </li>
         )}
       </ul>
-      <div className="mt-2 flex items-center justify-between border-t border-border-strong pt-2 text-sm font-semibold">
-        <span className="text-muted-foreground">Total</span>
-        <span className="font-mono tabular-nums text-foreground">{total2 ?? money(total)}</span>
+      <div className="mt-2 flex items-center justify-between gap-3 border-t border-border-strong pt-2 text-sm font-semibold">
+        <span className="min-w-0 truncate text-muted-foreground">{total2 ? 'Total liabilities & equity' : totalLabel ?? 'Total'}</span>
+        <span className="shrink-0 whitespace-nowrap font-mono tabular-nums text-foreground">{money(total2 ?? total)}</span>
       </div>
     </div>
   );
@@ -433,7 +433,30 @@ function TrialPanel({ asOf, onExport }: { asOf: string; onExport: (rows: (string
         />
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto rounded-control border border-border">
+        <div className="overflow-hidden rounded-control border border-border sm:hidden">
+          <ul className="divide-y divide-border">
+            {data.rows.map((row) => {
+              const debit = Number(row.debit);
+              return (
+                <li key={row.accountId} className="flex items-center justify-between gap-3 px-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm text-foreground">{row.name}</p>
+                    <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground">{row.type}</p>
+                  </div>
+                  <p className="shrink-0 whitespace-nowrap text-right font-mono text-sm tabular-nums text-foreground">
+                    {debit ? money(row.debit) : money(row.credit)}
+                    <span className="ml-1 text-[10px] uppercase tracking-[0.1em] text-muted-foreground">{debit ? 'Dr' : 'Cr'}</span>
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="flex items-center justify-between gap-3 border-t border-border-strong bg-surface/60 px-3 py-2 font-semibold">
+            <span className="text-xs text-muted-foreground">Total Dr / Cr</span>
+            <span className="shrink-0 whitespace-nowrap font-mono text-xs tabular-nums">{money(data.totalDebit)} / {money(data.totalCredit)}</span>
+          </div>
+        </div>
+        <div className="hidden overflow-x-auto rounded-control border border-border sm:block">
           <table className="w-full min-w-[34rem] text-left text-sm">
             <thead className="bg-surface text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
               <tr>

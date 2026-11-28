@@ -6,13 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useGetTransactions, useAddTransaction, useGetAccounts, useAddAccount, useEditTransaction, useDeleteTransaction, useRestoreTransaction, Transaction, useGetTransactionsInfinite, useTransactionTags } from '../hooks/useQueries';
-import { Plus, Download, ArrowRight, Trash2, PlusCircle, Edit, Loader2, Calendar as CalendarIcon, Search, Repeat } from 'lucide-react';
+import { Plus, Download, ArrowRight, Trash2, PlusCircle, Edit, Loader2, Calendar as CalendarIcon, Search, Repeat, MoreVertical } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { Check, ChevronsUpDown, FileInput } from 'lucide-react';
 import { ImportTransactionDialog } from './ImportTransactionDialog';
@@ -783,20 +784,20 @@ export function TransactionsTab({
 
                 return (
                   <div key={t.id} className="group flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-surface">
-                    <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control border border-border bg-surface">
                         {hasIncome ? <Plus className="h-4 w-4 text-success" /> : hasExpense ? <ArrowRight className="h-4 w-4 text-destructive" /> : <ChevronsUpDown className="h-4 w-4 text-primary" />}
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1 overflow-hidden">
                         <p className="line-clamp-2 text-[13px] font-medium text-foreground sm:line-clamp-1">{t.description}</p>
-                        <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
+                        <div className="mt-1 flex min-w-0 flex-wrap gap-1.5 text-[11px] text-muted-foreground">
                           {t.splits.slice(0, 2).map((s: any, i: number) => (
-                            <span key={i} className="rounded-sm border border-border bg-surface px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em]">
+                            <span key={i} className="shrink-0 whitespace-nowrap rounded-sm border border-border bg-surface px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em]">
                               {s.account?.name}
                             </span>
                           ))}
                           {((t as any).tags ?? []).slice(0, 3).map((tag: string) => (
-                            <span key={tag} className="rounded-sm bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] lowercase tracking-[0.02em] text-primary">
+                            <span key={tag} className="shrink-0 whitespace-nowrap rounded-sm bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] lowercase tracking-[0.02em] text-primary">
                               #{tag}
                             </span>
                           ))}
@@ -808,7 +809,7 @@ export function TransactionsTab({
                       <div className={`tabular text-[14px] font-semibold ${typeColor}`}>
                         {formatCurrency(totalAmount)}
                       </div>
-                      <div className="flex gap-1 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+                      <div className="hidden gap-1 md:flex md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:group-focus-within:opacity-100">
                         <Button size="icon-sm" variant="ghost" aria-label={`Make ${t.description} recurring`} onClick={() => openRecurring(t)}>
                           <Repeat className="h-3.5 w-3.5" />
                         </Button>
@@ -819,6 +820,24 @@ export function TransactionsTab({
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-11 w-11 md:hidden" aria-label={`Actions for ${t.description}`}>
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => openRecurring(t)}>
+                            <Repeat className="mr-2 h-4 w-4" /> Make recurring
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleEdit(t)}>
+                            <Edit className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleDelete(t.id)} className="text-destructive focus:text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 );
@@ -852,7 +871,7 @@ export function TransactionsTab({
         <DialogTrigger asChild>
           <Button
             className="fixed bottom-6 right-4 z-50 h-12 w-12 rounded-full p-0 shadow-lifted md:hidden"
-            aria-label="Add transaction"
+            aria-label="New transaction"
           >
             <Plus className="h-5 w-5" />
           </Button>
@@ -900,7 +919,7 @@ export function TransactionsTab({
                     <div className="flex gap-2">
                       <Select value={simpleForm.fromAccountId} onValueChange={(v: string) => setSimpleForm({ ...simpleForm, fromAccountId: v })}>
                         <SelectTrigger className="rounded-xl">
-                          <SelectValue placeholder="Source Account" />
+                          <SelectValue placeholder="Pick account" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
                           {accounts?.map((acc: any) => (
@@ -923,7 +942,7 @@ export function TransactionsTab({
                     <div className="flex gap-2">
                       <Select value={simpleForm.toAccountId} onValueChange={(v: string) => setSimpleForm({ ...simpleForm, toAccountId: v })}>
                         <SelectTrigger className="rounded-xl">
-                          <SelectValue placeholder="Destination Account" />
+                          <SelectValue placeholder="Pick account" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl">
                           {accounts?.map((acc: any) => (

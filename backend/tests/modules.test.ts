@@ -178,3 +178,33 @@ describe('investments and loans', () => {
         assert.ok(first && 'principal' in first && 'interest' in first);
     });
 });
+
+describe('balance sheet signs', () => {
+    it('shows equity credit-positive when the ledger carries it as a debit', async () => {
+        const opener = await createUser('signs');
+        await chartOfAccounts(opener);
+        const equity = await createAccount(opener, 'Opening Balance', 'EQUITY', 'Equity');
+
+        const posted = await postTransactionViaApi(opener, {
+            description: 'Opening balances',
+            date: today,
+            lines: [
+                { accountId: equity, amount: '500000' },
+                { accountId: opener.accounts.bank, amount: '-500000' },
+            ],
+        });
+        assert.equal(posted.status, 200);
+
+        const sheet = await api(`/api/reports/balance-sheet?asOf=${today}`, { token: opener.token });
+        assert.equal(sheet.status, 200);
+        assert.equal(sheet.body.balanced, true, 'assets must equal liabilities plus equity');
+
+        const line = sheet.body.equity.find((row: any) => row.accountId === equity);
+        assert.equal(Number(line.amount), -5000, 'equity is presented credit-positive');
+        assert.equal(Number(sheet.body.totalEquity), -5000);
+        assert.equal(
+            Math.round(Number(sheet.body.totalAssets) * 100),
+            Math.round(Number(sheet.body.totalLiabilitiesAndEquity) * 100),
+        );
+    });
+});

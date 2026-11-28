@@ -481,7 +481,7 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSuccess }
                                     <div className="flex gap-2">
                                         <Select value={simpleForm.fromAccountId} onValueChange={(v) => setSimpleForm({ ...simpleForm, fromAccountId: v })}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Source Account" />
+                                                <SelectValue placeholder="Pick account" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {accounts?.map(acc => (
@@ -504,7 +504,7 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSuccess }
                                     <div className="flex gap-2">
                                         <Select value={simpleForm.toAccountId} onValueChange={(v) => setSimpleForm({ ...simpleForm, toAccountId: v })}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Destination Account" />
+                                                <SelectValue placeholder="Pick account" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {accounts?.map(acc => (
