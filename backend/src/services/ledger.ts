@@ -27,6 +27,7 @@ export interface PostTransactionInput {
     description: string;
     date?: Date | string | null;
     lines: LedgerLine[];
+    tags?: string[];
     status?: TransactionStatusValue;
     source?: string;
     sourceId?: string | null;
@@ -41,6 +42,7 @@ export interface UpdateTransactionInput {
     description?: string;
     date?: Date | string;
     lines?: LedgerLine[];
+    tags?: string[];
     status?: TransactionStatusValue;
     actor?: string;
     client?: Prisma.TransactionClient;
@@ -145,6 +147,7 @@ export async function postTransaction(input: PostTransactionInput) {
                 source: input.source ?? 'MANUAL',
                 sourceId: input.sourceId ?? null,
                 idempotencyKey: input.idempotencyKey ?? null,
+                tags: input.tags ?? [],
                 splits: {
                     create: input.lines.map((line) => ({
                         accountId: line.accountId,
@@ -219,6 +222,7 @@ export async function updateTransaction(input: UpdateTransactionInput) {
                 description: input.description ?? undefined,
                 date: date ?? undefined,
                 status: input.status ?? undefined,
+                tags: input.tags ?? undefined,
             },
         });
 

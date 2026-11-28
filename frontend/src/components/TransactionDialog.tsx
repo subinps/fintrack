@@ -163,6 +163,7 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSuccess }
 
     const [createAccountOpen, setCreateAccountOpen] = useState(false);
     const [mode, setMode] = useState<'simple' | 'advanced'>('simple');
+    const [tagInput, setTagInput] = useState('');
 
     // Simple Mode State
     const [simpleForm, setSimpleForm] = useState({
@@ -205,6 +206,7 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSuccess }
                 }
 
                 setAdvancedSplits(splits);
+                setTagInput(((transaction.tags as string[] | undefined) ?? []).join(', '));
             } else {
                 resetForms();
             }
@@ -228,6 +230,7 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSuccess }
             description: '',
             date: new Date().toISOString().split('T')[0],
         });
+        setTagInput('');
         setMode('simple');
     };
 
@@ -376,12 +379,18 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSuccess }
                 date = new Date(advancedForm.date);
             }
 
+            const parsedTags = tagInput
+                .split(',')
+                .map((tag) => tag.trim())
+                .filter(Boolean);
+
             if (transaction) {
                 await editTransaction.mutateAsync({
                     id: transaction.id,
                     description,
                     date,
                     splits,
+                    tags: parsedTags,
                 });
                 toast.success('Transaction updated successfully');
             } else {
@@ -389,6 +398,7 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSuccess }
                     description,
                     date,
                     splits,
+                    tags: parsedTags,
                 });
                 toast.success('Transaction added successfully');
             }
@@ -623,6 +633,22 @@ export function TransactionDialog({ open, onOpenChange, transaction, onSuccess }
                                 </Button>
                             </div>
                         </TabsContent>
+
+                        <div className="mt-4 space-y-2">
+                            <Label htmlFor="transaction-tags" className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                                Tags
+                            </Label>
+                            <Input
+                                id="transaction-tags"
+                                value={tagInput}
+                                onChange={(e) => setTagInput(e.target.value)}
+                                placeholder="travel, reimbursable, joint"
+                                autoComplete="off"
+                            />
+                            <p className="text-[11px] text-muted-foreground">
+                                Comma separated. Tags make filtering and saved views quick.
+                            </p>
+                        </div>
 
                         <DialogFooter className="mt-6">
                             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

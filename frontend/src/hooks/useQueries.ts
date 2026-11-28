@@ -31,6 +31,8 @@ export interface Transaction {
   date: string;
   description: string;
   splits: TransactionSplit[];
+  tags?: string[];
+  status?: string;
 }
 
 // Account Queries
@@ -147,8 +149,18 @@ export function useGetTransactions(params?: { limit?: number; page?: number }, o
   });
 }
 
-export function useGetTransactionsInfinite(limit = 50, options?: { enabled?: boolean }) {
-  return useInfiniteQuery({
+export function useTransactionTags() {
+  return useQuery<{ name: string; count: number }[]>({
+    queryKey: ['transactions', 'tags'],
+    queryFn: async () => {
+      const res = await api.get('/transactions/tags');
+      return res.data.data || [];
+    },
+    staleTime: 60_000,
+  });
+}
+
+export function useGetTransactionsInfinite(limit = 50, options?: { enabled?: boolean }) {  return useInfiniteQuery({
     queryKey: ['transactions', 'infinite', limit],
     queryFn: async ({ pageParam = 1 }) => {
       const res = await api.get(`/transactions?limit=${limit}&page=${pageParam}`);
@@ -168,7 +180,7 @@ export function useGetTransactionsInfinite(limit = 50, options?: { enabled?: boo
 export function useAddTransaction() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { description: string; date: Date; splits: { accountId: number; amount: number; units?: number }[] }) => {
+    mutationFn: async (data: { description: string; date: Date; splits: { accountId: number; amount: number; units?: number }[]; tags?: string[] }) => {
       const payload = {
         description: data.description,
         date: data.date.toISOString(),
@@ -177,6 +189,7 @@ export function useAddTransaction() {
           amount: s.amount.toString(), // Backend expects BigInt string
           units: s.units,
         })),
+        tags: data.tags ?? [],
       };
       const res = await api.post('/transactions', payload);
       return res.data;
@@ -191,7 +204,7 @@ export function useAddTransaction() {
 export function useEditTransaction() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { id: number; description: string; date: Date; splits: { accountId: number; amount: number; units?: number }[] }) => {
+    mutationFn: async (data: { id: number; description: string; date: Date; splits: { accountId: number; amount: number; units?: number }[]; tags?: string[] }) => {
       const payload = {
         description: data.description,
         date: data.date.toISOString(),
@@ -200,6 +213,7 @@ export function useEditTransaction() {
           amount: s.amount.toString(),
           units: s.units,
         })),
+        tags: data.tags ?? [],
       };
       const res = await api.put(`/transactions/${data.id}`, payload);
       return res.data;

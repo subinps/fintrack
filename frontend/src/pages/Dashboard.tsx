@@ -4,18 +4,26 @@ import { Button } from '@/components/ui/button';
 import { Tabs } from '@/components/ui/tabs';
 import {
   ArrowLeftRight,
+  BadgeCheck,
+  BadgeIndianRupee,
+  BarChart3,
   Compass,
   CreditCard,
   Landmark,
   LineChart,
   ListTree,
   LogOut,
+  Repeat,
   Menu,
   Plus,
   ReceiptText,
   Search,
+  Sparkles,
+  Target,
   Trash2,
   UserRound,
+  Users,
+  Zap,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -23,6 +31,7 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import { NotificationBell } from '../components/NotificationBell';
 import { CommandPalette } from '../components/CommandPalette';
 import { motion, useReducedMotion } from 'framer-motion';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
 
 // Lazy load tabs
@@ -35,6 +44,15 @@ const ProfileTab = lazy(() => import('../components/ProfileTab').then(module => 
 const IncomeExpenseTab = lazy(() => import('../components/IncomeExpenseTab').then(module => ({ default: module.IncomeExpenseTab })));
 const ChartOfAccountsTab = lazy(() => import('../components/ChartOfAccountsTab').then(module => ({ default: module.ChartOfAccountsTab })));
 const TrashTab = lazy(() => import('../components/TrashTab').then(module => ({ default: module.TrashTab })));
+const RecurringTab = lazy(() => import('../components/RecurringTab').then(module => ({ default: module.RecurringTab })));
+const BudgetsTab = lazy(() => import('../components/BudgetsTab').then(module => ({ default: module.BudgetsTab })));
+const ConnectAiTab = lazy(() => import('../components/ConnectAiTab').then(module => ({ default: module.ConnectAiTab })));
+const AutomationsTab = lazy(() => import('../components/AutomationsTab').then(module => ({ default: module.AutomationsTab })));
+const SplitsTab = lazy(() => import('../components/SplitsTab').then(module => ({ default: module.SplitsTab })));
+const ReconcileTab = lazy(() => import('../components/ReconcileTab').then(module => ({ default: module.ReconcileTab })));
+const ReportsTab = lazy(() => import('../components/ReportsTab').then(module => ({ default: module.ReportsTab })));
+const TaxTab = lazy(() => import('../components/TaxTab').then(module => ({ default: module.TaxTab })));
+const InsightsTab = lazy(() => import('../components/InsightsTab').then(module => ({ default: module.InsightsTab })));
 
 const navigation = [
   {
@@ -42,25 +60,43 @@ const navigation = [
     items: [
       { id: 'overview', label: 'Overview', icon: Compass, hint: 'Net worth, allocation, momentum' },
       { id: 'income-expense', label: 'Income & Expenses', icon: ArrowLeftRight, hint: 'Cash in against cash out' },
+      { id: 'budgets', label: 'Budgets & Goals', icon: Target, hint: 'Limits, safe to spend, goals' },
       { id: 'investments', label: 'Investments', icon: LineChart, hint: 'Holdings and market value' },
       { id: 'accounts', label: 'Bank & Cash', icon: Landmark, hint: 'Liquid balances' },
+      { id: 'insights', label: 'Insights', icon: Sparkles, hint: 'Savings, runway, digest' },
     ],
   },
   {
     group: 'Ledger',
     items: [
       { id: 'transactions', label: 'Transactions', icon: ReceiptText, hint: 'Every posted entry' },
+      { id: 'reconcile', label: 'Reconcile', icon: BadgeCheck, hint: 'Match the bank statement' },
+      { id: 'recurring', label: 'Recurring', icon: Repeat, hint: 'Scheduled money and forecasts' },
+      { id: 'automations', label: 'Automations', icon: Zap, hint: 'Scripts that post for you' },
       { id: 'chart-of-accounts', label: 'Chart of Accounts', icon: ListTree, hint: 'The account tree' },
       { id: 'trash', label: 'Trash', icon: Trash2, hint: 'Voided entries you can restore' },
     ],
   },
   {
     group: 'Commitments',
-    items: [{ id: 'debts', label: 'Debts', icon: CreditCard, hint: 'Owed and owed to you' }],
+    items: [
+      { id: 'debts', label: 'Debts', icon: CreditCard, hint: 'Owed and owed to you' },
+      { id: 'shared', label: 'Shared', icon: Users, hint: 'Split expenses and settle up' },
+    ],
+  },
+  {
+    group: 'Books',
+    items: [
+      { id: 'reports', label: 'Reports', icon: BarChart3, hint: 'P&L, balance sheet, cash flow' },
+      { id: 'tax', label: 'Tax', icon: BadgeIndianRupee, hint: 'Estimates, deductions, advance tax' },
+    ],
   },
   {
     group: 'Account',
-    items: [{ id: 'profile', label: 'Profile', icon: UserRound, hint: 'Data and preferences' }],
+    items: [
+      { id: 'connect-ai', label: 'Connect to AI', icon: Sparkles, hint: 'Keys, drafts and activity' },
+      { id: 'profile', label: 'Profile', icon: UserRound, hint: 'Data and preferences' },
+    ],
   },
 ];
 
@@ -103,7 +139,7 @@ function NavButton({
     <button
       type="button"
       onClick={() => onSelect(item.id)}
-      aria-label={`${item.label} tab`}
+      aria-label={compact ? `Go to ${item.label}` : `${item.label} tab`}
       aria-current={active ? 'page' : undefined}
       className={cn(
         'group relative flex w-full items-center gap-3 rounded-control px-3 text-left transition-[background-color,color,box-shadow] duration-150',
@@ -129,6 +165,7 @@ export function Dashboard() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [pendingTransaction, setPendingTransaction] = useState(false);
   const reduceMotion = useReducedMotion();
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
 
   const activeItem = navItems.find((item) => item.id === activeTab) ?? navItems[0];
   const initials = (user?.name || user?.email || 'FT')
@@ -168,7 +205,7 @@ export function Dashboard() {
   );
 
   const sidebar = (compact = false) => (
-    <nav aria-label="Primary" className="flex flex-1 flex-col gap-6 overflow-y-auto">
+    <nav aria-label="Primary" className="flex shrink-0 flex-col gap-5 pr-1">
       {navigation.map((group) => (
         <div key={group.group}>
           <p className="eyebrow mb-2 px-3">{group.group}</p>
@@ -198,7 +235,8 @@ export function Dashboard() {
       </a>
       <div className="lg:grid lg:grid-cols-[252px_minmax(0,1fr)] xl:grid-cols-[272px_minmax(0,1fr)]">
         {/* Desktop rail */}
-        <aside className="sticky top-0 hidden h-screen flex-col gap-6 border-r border-border bg-card px-3 pb-4 pt-5 lg:flex">
+        {isDesktop && (
+        <aside className="sticky top-0 flex h-screen flex-col gap-6 overflow-y-auto border-r border-border bg-card px-3 pb-4 pt-5">
           <div className="px-2">
             <Brand />
           </div>
@@ -229,6 +267,7 @@ export function Dashboard() {
             </div>
           </div>
         </aside>
+        )}
 
         <div className="flex min-h-screen min-w-0 flex-col">
           {/* Top bar */}
@@ -240,12 +279,12 @@ export function Dashboard() {
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="flex w-[19rem] flex-col border-border bg-card px-3 pb-6 pt-5">
+                <SheetContent side="left" className="flex w-[19rem] flex-col overflow-y-auto border-border bg-card px-3 pb-6 pt-5">
                   <SheetTitle className="sr-only">Navigation</SheetTitle>
                   <div className="mb-5 flex items-center px-1">
                     <Brand />
                   </div>
-                  {sidebar(true)}
+                  {mobileNavOpen ? sidebar(true) : null}
                   <div className="mt-auto space-y-3 border-t border-border pt-4">
                     <div className="flex items-center gap-2 px-1">
                       <ThemeToggle />
@@ -258,8 +297,12 @@ export function Dashboard() {
                 </SheetContent>
               </Sheet>
 
-              <div className="lg:hidden">
+              <div className="flex min-w-0 items-center gap-2 lg:hidden">
                 <Brand />
+                <span aria-hidden="true" className="h-3 w-px shrink-0 bg-border-strong" />
+                <span className="truncate font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                  {activeItem.label}
+                </span>
               </div>
 
               <div className="hidden min-w-0 items-center gap-2 lg:flex">
@@ -288,7 +331,7 @@ export function Dashboard() {
                   variant="ghost"
                   size="icon"
                   className="sm:hidden"
-                  aria-label="Search pages and actions"
+                  aria-label="Search"
                   onClick={() => setPaletteOpen(true)}
                 >
                   <Search className="h-[18px] w-[18px]" />
@@ -343,7 +386,16 @@ export function Dashboard() {
                   {activeTab === 'chart-of-accounts' && <ChartOfAccountsTab />}
                   {activeTab === 'trash' && <TrashTab />}
                   {activeTab === 'debts' && <DebtsTab />}
+                  {activeTab === 'shared' && <SplitsTab />}
                   {activeTab === 'transactions' && <TransactionsTab initialAddOpen={pendingTransaction} onInitialAddConsumed={() => setPendingTransaction(false)} />}
+                  {activeTab === 'recurring' && <RecurringTab />}
+                  {activeTab === 'automations' && <AutomationsTab />}
+                  {activeTab === 'reconcile' && <ReconcileTab />}
+                  {activeTab === 'reports' && <ReportsTab />}
+                  {activeTab === 'tax' && <TaxTab />}
+                  {activeTab === 'insights' && <InsightsTab onNavigate={(tab) => setActiveTab(tab)} />}
+                  {activeTab === 'budgets' && <BudgetsTab />}
+                  {activeTab === 'connect-ai' && <ConnectAiTab />}
                   {activeTab === 'income-expense' && <IncomeExpenseTab />}
                   {activeTab === 'profile' && <ProfileTab />}
                 </Suspense>

@@ -16,3 +16,21 @@ export function serializeTransaction<T extends SerialisableTransaction>(transact
 export function serializeTransactions<T extends SerialisableTransaction>(transactions: T[]) {
     return transactions.map(serializeTransaction);
 }
+
+type SerialisableAccount = {
+    loanPrincipalPaise?: bigint | null;
+    emiPaise?: bigint | null;
+    creditLimitPaise?: bigint | null;
+} & Record<string, unknown>;
+
+const paise = (value?: bigint | null) => (value === undefined ? undefined : value === null ? null : value.toString());
+
+/** Account rows carry paise amounts as BigInt; widen them to strings so JSON can carry them. */
+export function serializeAccount<T extends SerialisableAccount>(account: T) {
+    return {
+        ...account,
+        loanPrincipalPaise: paise(account.loanPrincipalPaise),
+        emiPaise: paise(account.emiPaise),
+        creditLimitPaise: paise(account.creditLimitPaise),
+    };
+}

@@ -21,12 +21,37 @@ import userDataRoutes from './routes/user_data';
 import healthRoutes from './routes/health';
 import notificationRoutes from './routes/notifications';
 import networthRoutes from './routes/networth';
+import recurringRoutes from './routes/recurring';
+import budgetRoutes from './routes/budgets';
+import goalRoutes from './routes/goals';
+import mcpRoutes from './routes/mcp';
+import automationRoutes from './routes/automations';
+import reconciliationRoutes from './routes/reconciliation';
+import importRoutes from './routes/imports';
+import attachmentRoutes from './routes/attachments';
+import reportRoutes from './routes/reports';
+import taxRoutes from './routes/tax';
+import investmentRoutes from './routes/investments';
+import loanRoutes from './routes/loans';
+import splitRoutes from './routes/splits';
+import insightRoutes from './routes/insights';
+import { buildMcpServer } from './mcp/server';
+import { authenticatePersonalToken } from './services/tokens';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { logger } from './lib/logger';
 import { LedgerError } from './services/ledger';
 import { startWorker } from './jobs';
+import { registerBudgetAlertHandlers } from './jobs/budget-alerts';
+import { registerAutomationEventHandlers } from './services/automation';
 import { stopQueue } from './lib/queue';
 
 const execAsync = promisify(exec);
+
+// Budget thresholds must fire in the API process too (tests and single-process deploys skip the worker).
+registerBudgetAlertHandlers();
+
+// Ledger-event automations run wherever ledger events are emitted, not only in the worker.
+registerAutomationEventHandlers();
 
 // Strict Env Validation
 const requiredEnv = ['JWT_SECRET', 'DATABASE_URL', 'SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'];
@@ -61,6 +86,43 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
+// MCP endpoint: AI clients authenticate with a personal token (Settings > Connect to AI).
+// Stateless streamable HTTP: one transport and server per request.
+app.post('/mcp', async (req, res) => {
+    const header = req.headers.authorization ?? '';
+    const bearer = Array.isArray(header) ? header[0] : header;
+    const raw = bearer.startsWith('Bearer ') ? bearer.slice(7) : String(req.headers['x-api-key'] ?? '');
+    const token = raw ? await authenticatePersonalToken(raw).catch(() => null) : null;
+
+    if (!token) {
+        res.status(401).json({
+            jsonrpc: '2.0',
+            error: { code: -32001, message: 'Missing or invalid FinTrack token. Create one in Settings > Connect to AI.' },
+            id: null,
+        });
+        return;
+    }
+
+    const server = buildMcpServer(token, req.ip);
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    res.on('close', () => {
+        transport.close().catch(() => undefined);
+        server.close().catch(() => undefined);
+    });
+
+    try {
+        await server.connect(transport);
+        await transport.handleRequest(req, res, req.body);
+    } catch (error) {
+        logger.error({ err: error }, 'MCP request failed');
+        if (!res.headersSent) res.status(500).json({ jsonrpc: '2.0', error: { code: -32603, message: 'Internal error' }, id: null });
+    }
+});
+
+app.get('/mcp', (_req, res) => {
+    res.status(405).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Use POST for MCP requests' }, id: null });
+});
+
 // Serve static files from the React frontend app
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../public')));
@@ -76,6 +138,20 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/user', userDataRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/networth', networthRoutes);
+app.use('/api/recurring', recurringRoutes);
+app.use('/api/budgets', budgetRoutes);
+app.use('/api/goals', goalRoutes);
+app.use('/api/mcp', mcpRoutes);
+app.use('/api/automations', automationRoutes);
+app.use('/api/reconciliation', reconciliationRoutes);
+app.use('/api/import', importRoutes);
+app.use('/api/attachments', attachmentRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/tax', taxRoutes);
+app.use('/api/investments', investmentRoutes);
+app.use('/api/loans', loanRoutes);
+app.use('/api/splits', splitRoutes);
+app.use('/api', insightRoutes);
 
 // Health is served both at /health (spec, for uptime probes) and /api/health (existing clients).
 app.use('/health', healthRoutes);

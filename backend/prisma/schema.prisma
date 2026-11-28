@@ -8,88 +8,293 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  createdAt DateTime @default(now())
-  isVerified Boolean @default(false)
-  verificationToken String?
+  id                      String    @id @default(uuid())
+  email                   String    @unique
+  password                String
+  name                    String
+  createdAt               DateTime  @default(now())
+  isVerified              Boolean   @default(false)
+  verificationToken       String?
   verificationTokenExpiry DateTime?
-  resetToken        String?
-  resetTokenExpiry  DateTime?
-  timezone          String   @default("Asia/Kolkata")
+  resetToken              String?
+  resetTokenExpiry        DateTime?
+  timezone                String    @default("Asia/Kolkata")
+  /// Kill switch for every automation of this user
+  automationPaused        Boolean   @default(false)
 
-  sessions      Session[]
-  accounts      Account[]
-  transactions  Transaction[]
-  snapshots     NetWorthSnapshot[]
-  categories    Category[]
-  notifications Notification[]
+  sessions           Session[]
+  accounts           Account[]
+  transactions       Transaction[]
+  snapshots          NetWorthSnapshot[]
+  categories         Category[]
+  notifications      Notification[]
   transactionHistory TransactionHistory[]
+  recurringRules     RecurringRule[]
+  budgets            Budget[]
+  goals              Goal[]
+  accessTokens       PersonalAccessToken[]
+  automations        Automation[]
+  importRules        ImportRule[]
+  savedViews         SavedView[]
+  attachments        Attachment[]
+  taxProfile         TaxProfile?
+  splitGroups        SplitGroup[]
 }
 
-model Session {
+model PersonalAccessToken {
+  id               String        @id @default(uuid())
+  userId           String
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  prefix           String
+  tokenHash        String        @unique
+  scopes           String[]      @default(["read"])
+  /// DRAFT (writes create drafts to approve) | DIRECT
+  writeMode        String        @default("DRAFT")
+  accountAllowList Int[]         @default([])
+  expiresAt        DateTime?
+  revokedAt        DateTime?
+  lastUsedAt       DateTime?
+  createdAt        DateTime      @default(now())
+  auditLogs        McpAuditLog[]
+
+  @@index([userId, revokedAt])
+}
+
+model McpAuditLog {
+  id           String               @id @default(uuid())
+  tokenId      String?
+  token        PersonalAccessToken? @relation(fields: [tokenId], references: [id], onDelete: SetNull)
+  userId       String
+  tool         String
+  args         Json
+  status       String               @default("OK") // OK | ERROR | DENIED
+  summary      String?
+  error        String?
+  ip           String?
+  durationMs   Int                  @default(0)
+  createdAt    DateTime             @default(now())
+
+  @@index([userId, createdAt])
+  @@index([tokenId, createdAt])
+}
+
+model Automation {
+  id                 String    @id @default(uuid())
+  userId             String
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name               String
+  description        String?
+  /// SCHEDULE | EVENT | WEBHOOK | MANUAL
+  triggerType        String    @default("MANUAL")
+  triggerConfig      Json      @default("{}")
+  script             String
+  variables          Json      @default("{}")
+  encryptedSecrets   String?
+  secretsIv          String?
+  isActive           Boolean   @default(false)
+  /// Global kill switch state lives on the user; this is the automation's own pause
+  failCount          Int       @default(0)
+  webhookSecretHash  String?
+  lastRunAt          DateTime?
+  archivedAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  versions AutomationVersion[]
+  runs     AutomationRun[]
+
+  @@index([userId, archivedAt])
+}
+
+model AutomationVersion {
+  id           String     @id @default(uuid())
+  automationId String
+  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  version      Int
+  script       String
+  variables    Json       @default("{}")
+  triggerConfig Json      @default("{}")
+  createdBy    String     @default("USER")
+  createdAt    DateTime   @default(now())
+
+  @@unique([automationId, version])
+}
+
+model AutomationRun {
+  id             String     @id @default(uuid())
+  automationId   String
+  automation     Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  runDate        DateTime
+  isDryRun       Boolean    @default(false)
+  trigger        String     @default("MANUAL")
+  status         String     // OK | FAILED | SKIPPED | DRY_RUN
+  logs           Json       @default("[]")
+  error          String?
+  transactionIds Int[]      @default([])
+  durationMs     Int        @default(0)
+  createdAt      DateTime   @default(now())
+
+  @@index([automationId, createdAt])
+  @@index([automationId, runDate])
+}
+
+model Budget {
   id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token     String   @unique // Store the JWT token itself or a hash
-  device    String?
-  ip        String?
-  lastActive DateTime @default(now())
+  name      String
+  /// WEEKLY | MONTHLY | QUARTERLY | YEARLY | CUSTOM
+  period    String   @default("MONTHLY")
+  startDate DateTime
+  /// Only used by CUSTOM budgets
+  endDate   DateTime?
+  rollover  Boolean  @default(false)
+  /// Upper bound for carried-over balance, if any
+  rolloverCapPaise BigInt?
+  /// FIXED | PERCENT_INCOME | ZERO_BASED | ENVELOPE
+  type      String   @default("FIXED")
+  notes     String?
+  deletedAt DateTime?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items BudgetItem[]
+
+  @@index([userId, deletedAt])
+}
+
+model BudgetItem {
+  id          String   @id @default(uuid())
+  budgetId    String
+  budget      Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  name        String?
+  accountId   Int?
+  account     Account? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  tag         String?
+  amountPaise BigInt   @default(0)
+  /// Percent of period income, used by PERCENT_INCOME budgets
+  percent     Float?
+  parentId    String?
+  parent      BudgetItem?  @relation("BudgetItemTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    BudgetItem[] @relation("BudgetItemTree")
+  alertAt     Int[]    @default([50, 80, 100])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  alerts BudgetAlertLog[]
+
+  @@index([budgetId])
+  @@index([accountId])
+}
+
+model BudgetAlertLog {
+  id          String     @id @default(uuid())
+  itemId      String
+  item        BudgetItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  periodStart DateTime
+  threshold   Int
+  createdAt   DateTime   @default(now())
+
+  @@unique([itemId, periodStart, threshold])
+  @@index([itemId])
+}
+
+model Goal {
+  id              String         @id @default(uuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  targetAmount    BigInt
+  targetDate      DateTime?
+  linkedAccountId Int?
+  linkedAccount   Account?       @relation(fields: [linkedAccountId], references: [id], onDelete: SetNull)
+  recurringRuleId String?
+  /// Manual progress when no account is linked
+  savedPaise      BigInt         @default(0)
+  notes           String?
+  archivedAt      DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([userId, archivedAt])
+}
+
+model Session {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String   @unique // Store the JWT token itself or a hash
+  device     String?
+  ip         String?
+  lastActive DateTime @default(now())
+  createdAt  DateTime @default(now())
 
   @@index([userId])
 }
 
 model Account {
-  id           Int      @id @default(autoincrement())
-  name         String
-  type         String   // ASSET, LIABILITY, INCOME, EXPENSE, EQUITY
+  id      Int     @id @default(autoincrement())
+  name    String
+  type    String // ASSET, LIABILITY, INCOME, EXPENSE, EQUITY
   // For sub-types like 'Bank', 'Credit Card', 'Category Name', 'Stock', 'Mutual Fund'
-  subType      String?
+  subType String?
 
   // Extended fields for specific account types
-  interestRate Float?   // For Debts/Loans
+  interestRate Float? // For Debts/Loans
   dueDate      DateTime? // For Debts/Loans
-  symbol       String?  // For Investments
-  units        Float?   // For Investments
+  symbol       String? // For Investments
+  units        Float? // For Investments
 
-  lastMarketPrice Decimal? // Store as Decimal for precision
+  lastMarketPrice  Decimal? // Store as Decimal for precision
   lastMarketUpdate DateTime?
 
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Loans and cards (Phase 9)
+  loanPrincipalPaise BigInt? // original sanctioned amount
+  tenureMonths       Int?
+  emiPaise           BigInt?
+  creditLimitPaise   BigInt?
+  statementDay       Int?
+  dueDay             Int?
 
-  splits       TransactionSplit[]
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  splits TransactionSplit[]
+  budgetItems BudgetItem[]
+  linkedGoals Goal[]
+  importRules ImportRule[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([userId, type])
 }
 
 model Transaction {
-  id           Int      @id @default(autoincrement())
-  date         DateTime @default(now())
-  description  String
+  id          Int      @id @default(autoincrement())
+  date        DateTime @default(now())
+  description String
 
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  splits       TransactionSplit[]
-  history      TransactionHistory[]
+  splits               TransactionSplit[]
+  history              TransactionHistory[]
+  recurringOccurrences RecurringOccurrence[]
+  attachments          Attachment[]
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  status       TransactionStatus @default(COMPLETED)
-  idempotencyKey String? @unique
-  source       String   @default("MANUAL") // MANUAL, IMPORT, RECURRING, AUTOMATION
-  sourceId     String?
-  deletedAt    DateTime?
-  voidReason   String?
+  status         TransactionStatus @default(COMPLETED)
+  idempotencyKey String?           @unique
+  source         String            @default("MANUAL") // MANUAL, IMPORT, RECURRING, AUTOMATION
+  sourceId       String?
+  tags           String[]          @default([])
+  deletedAt      DateTime?
+  voidReason     String?
 
   @@index([userId, status, date(sort: Desc), id(sort: Desc)])
   @@index([userId, deletedAt])
@@ -102,16 +307,20 @@ enum TransactionStatus {
 }
 
 model TransactionSplit {
-  id            Int         @id @default(autoincrement())
-  amount        BigInt      // Positive for Debit, Negative for Credit (or vice versa, standard is Debit +, Credit -)
+  id     Int    @id @default(autoincrement())
+  amount BigInt // Positive for Debit, Negative for Credit (or vice versa, standard is Debit +, Credit -)
 
   transactionId Int
   transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
 
-  accountId     Int
-  account       Account     @relation(fields: [accountId], references: [id])
+  accountId Int
+  account   Account @relation(fields: [accountId], references: [id])
 
-  units         Decimal?    // Units purchased (positive) or sold (negative)
+  units Decimal? // Units purchased (positive) or sold (negative)
+
+  /// Set when the line is matched against a bank statement
+  reconciledAt DateTime?
+  statementRunId String?
 
   @@index([transactionId])
   @@index([accountId])
@@ -123,7 +332,7 @@ model TransactionHistory {
   transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
   userId        String
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  action        String      // CREATE, UPDATE, VOID, RESTORE
+  action        String // CREATE, UPDATE, VOID, RESTORE
   before        Json?
   after         Json?
   actor         String      @default("USER") // USER, SYSTEM, RECURRING, AUTOMATION
@@ -134,15 +343,15 @@ model TransactionHistory {
 }
 
 model Notification {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      String   // JOB_FAILED, ACCOUNT_DUPLICATE, AUTOMATION_DISABLED, SYNC, BUDGET...
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // JOB_FAILED, ACCOUNT_DUPLICATE, AUTOMATION_DISABLED, SYNC, BUDGET...
   title     String
   body      String
   href      String?
   readAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId, readAt])
   @@index([userId, createdAt(sort: Desc)])
@@ -162,8 +371,8 @@ model NetWorthSnapshot {
   liabilities Decimal
   createdAt   DateTime @default(now())
 
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
 }
@@ -176,4 +385,203 @@ model Category {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, type, name])
+}
+
+model RecurringRule {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  /// Multi-split template: { description, lines: [{ accountId, amountPaise, units? }] }
+  template         Json
+  /// iCalendar RRULE without DTSTART, e.g. FREQ=MONTHLY;BYMONTHDAY=5
+  rrule            String
+  timezone         String    @default("Asia/Kolkata")
+  startDate        DateTime
+  endDate          DateTime?
+  maxRuns          Int?
+  /// AUTO_POST | CONFIRM
+  mode             String    @default("AUTO_POST")
+  /// ALL | LATEST | SKIP
+  catchUp          String    @default("ALL")
+  /// SAME | PREV_BUSINESS | NEXT_BUSINESS
+  weekendPolicy    String    @default("SAME")
+  /// FIXED | ASK | FORMULA
+  amountMode       String    @default("FIXED")
+  /// JSON: { kind: "PERCENT_OF_BALANCE", accountId, percent, minPaise?, maxPaise? }
+  formula          String?
+  nextRunAt        DateTime
+  isActive         Boolean   @default(true)
+  remindDaysBefore Int       @default(0)
+  runCount         Int       @default(0)
+  lastRunAt        DateTime?
+  deletedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  occurrences RecurringOccurrence[]
+
+  @@index([userId, isActive, nextRunAt])
+  @@index([nextRunAt])
+}
+
+model RecurringOccurrence {
+  id            String        @id @default(uuid())
+  ruleId        String
+  rule          RecurringRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  dueDate       DateTime
+  /// POSTED | PENDING | SKIPPED | FAILED
+  status        String        @default("PENDING")
+  transactionId Int?
+  transaction   Transaction?  @relation(fields: [transactionId], references: [id])
+  amountPaise   BigInt?
+  note          String?
+  error         String?
+  createdAt     DateTime      @default(now())
+  postedAt      DateTime?
+
+  @@unique([ruleId, dueDate])
+  @@index([ruleId, dueDate])
+  @@index([status, dueDate])
+}
+
+model ImportRule {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  /// CONTAINS | EQUALS | REGEX
+  matchType String   @default("CONTAINS")
+  pattern   String
+  /// The category account a matching description is posted to
+  accountId Int
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  priority  Int      @default(100)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, active, priority])
+}
+
+model SavedView {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  /// { search, accountIds, tags, status, from, to, type }
+  filters   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Attachment {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactionId Int?
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  filename      String
+  mimeType      String
+  sizeBytes     Int
+  data          Bytes
+  createdAt     DateTime @default(now())
+
+  @@index([userId, transactionId])
+}
+
+model TaxProfile {
+  id                   String   @id @default(uuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fiscalYearStartMonth Int      @default(4)
+  regime               String   @default("new")
+  /// [{ label, tag, limitPaise }]
+  deductions           Json     @default("[]")
+  notes                String?
+  updatedAt            DateTime @updatedAt
+}
+
+/// Phase 8: shared expenses. A group holds members, expenses and settlements;
+/// balances are always derived from them, never stored.
+model SplitGroup {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  emoji     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members     SplitMember[]
+  expenses    SplitExpense[]
+  settlements SplitSettlement[]
+
+  @@index([userId])
+}
+
+model SplitMember {
+  id        String   @id @default(uuid())
+  groupId   String
+  group     SplitGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name      String
+  email     String?
+  /// The owner of the ledger — their share can be posted to a real account
+  isMe      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  shares  SplitShare[]
+  paid    SplitExpense[]      @relation("SplitPaidBy")
+  paidOut SplitSettlement[]   @relation("SettleFrom")
+  paidIn  SplitSettlement[]   @relation("SettleTo")
+
+  @@index([groupId])
+}
+
+model SplitExpense {
+  id          String   @id @default(uuid())
+  groupId     String
+  group       SplitGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  description String
+  amountPaise BigInt
+  date        DateTime @default(now())
+  category    String?
+  paidById    String
+  paidBy      SplitMember @relation("SplitPaidBy", fields: [paidById], references: [id], onDelete: Cascade)
+  /// Set once the owner's share has been posted to their ledger
+  transactionId Int?
+  createdAt   DateTime @default(now())
+
+  shares SplitShare[]
+
+  @@index([groupId, date])
+}
+
+model SplitShare {
+  id          String   @id @default(uuid())
+  expenseId   String
+  expense     SplitExpense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  memberId    String
+  member      SplitMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  amountPaise BigInt
+
+  @@unique([expenseId, memberId])
+  @@index([memberId])
+}
+
+model SplitSettlement {
+  id          String   @id @default(uuid())
+  groupId     String
+  group       SplitGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  fromId      String
+  from        SplitMember @relation("SettleFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  toId        String
+  to          SplitMember @relation("SettleTo", fields: [toId], references: [id], onDelete: Cascade)
+  amountPaise BigInt
+  date        DateTime @default(now())
+  note        String?
+
+  @@index([groupId, date])
 }

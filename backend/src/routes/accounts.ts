@@ -5,6 +5,7 @@ import { authenticateToken, AuthRequest } from '../middleware/auth';
 import ExcelJS from 'exceljs';
 import { LedgerError, postTransaction } from '../services/ledger';
 import { emitLedgerEvent } from '../lib/events';
+import { serializeAccount } from '../lib/serialize';
 
 const router = express.Router();
 
@@ -121,14 +122,14 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
                 }
             }
 
-            return {
+            return serializeAccount({
                 ...acc,
                 balance: balance.toString(),
                 units: currentUnits || acc.units,
                 averageBuyPrice,
                 lastMarketPrice,
                 lastMarketUpdate
-            };
+            });
         });
 
         res.json(accountsWithBalance);
@@ -242,10 +243,10 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
 
         emitLedgerEvent({ type: 'account.changed', userId: req.user!.id, accountIds: [account.id] });
 
-        res.json({
+        res.json(serializeAccount({
             ...account,
             balance: openingBalance ? (Math.round(parseFloat(openingBalance) * 100)).toString() : '0',
-        });
+        }));
     } catch (error) {
         if (error instanceof LedgerError) {
             return res.status(error.statusCode).json({ error: error.message, code: error.code });
@@ -308,10 +309,10 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
 
         emitLedgerEvent({ type: 'account.changed', userId: req.user!.id, accountIds: [account.id] });
 
-        res.json({
+        res.json(serializeAccount({
             ...account,
             balance: balance.toString(),
-        });
+        }));
     } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
             return res.status(409).json({ error: 'An account with that name and type already exists' });
@@ -341,7 +342,7 @@ router.patch('/:id/price', authenticateToken, async (req: AuthRequest, res) => {
 
         emitLedgerEvent({ type: 'account.changed', userId: req.user!.id, accountIds: [account.id] });
 
-        res.json(account);
+        res.json(serializeAccount(account));
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Server error' });

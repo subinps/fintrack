@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import type { Account } from '../hooks/useQueries';
 
 import { LedgerViewDialog } from './LedgerViewDialog';
+import { LoansPanel } from './LoansPanel';
 
 export function DebtsTab() {
   const { data: debts, isLoading: debtsLoading } = useGetDebts();
@@ -381,7 +382,12 @@ export function DebtsTab() {
         <TabsList>
           <TabsTrigger value="debts">Debts ({liabilities.length})</TabsTrigger>
           <TabsTrigger value="receivables">Receivables ({assets.length})</TabsTrigger>
+          <TabsTrigger value="loans">Loans &amp; cards</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="loans" className="space-y-4">
+          <LoansPanel />
+        </TabsContent>
 
         <TabsContent value="debts" className="space-y-4">
           {liabilities.length > 0 ? (

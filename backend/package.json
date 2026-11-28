@@ -13,7 +13,8 @@
     "db:migrate": "prisma migrate deploy",
     "db:dev": "prisma migrate dev",
     "db:dedupe": "ts-node scripts/dedupe-accounts.ts",
-    "db:backfill-networth": "ts-node scripts/backfill-networth.ts"
+    "db:backfill-networth": "ts-node scripts/backfill-networth.ts",
+    "test": "node --import tsx --test --test-concurrency=1 tests/*.test.ts"
   },
   "keywords": [],
   "author": "SUBIN",
@@ -27,6 +28,7 @@
   },
   "homepage": "https://github.com/subinps/fintrack#readme",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@prisma/client": "^5.10.2",
     "@types/cookie-parser": "^1.4.10",
     "@types/node-cron": "^3.0.11",
@@ -43,10 +45,15 @@
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.11",
+    "otplib": "^13.6.0",
+    "pdfkit": "^0.21.0",
     "pg-boss": "^12.40.0",
     "pino": "^10.4.0",
     "pino-http": "^11.0.0",
     "prisma": "^5.10.2",
+    "qrcode": "^1.5.4",
+    "quickjs-emscripten": "^0.32.0",
+    "rrule": "^2.8.1",
     "ua-parser-js": "^2.0.6",
     "xlsx": "^0.18.5",
     "zod": "^4.6.7"
@@ -64,6 +71,7 @@
     "@types/ua-parser-js": "^0.7.39",
     "nodemon": "^3.1.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.23.15",
     "typescript": "^5.3.3"
   }
 }

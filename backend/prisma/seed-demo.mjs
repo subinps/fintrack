@@ -52,6 +52,7 @@ async function main() {
   ]) {
     expenseCats[name] = await acc(name, 'EXPENSE', sub);
   }
+  const openingEquity = await acc('Opening Balance', 'EQUITY', 'Capital');
   const salary = await acc('Salary', 'INCOME', 'Primary');
   const freelance = await acc('Freelance', 'INCOME', 'Side');
   const dividends = await acc('Dividends', 'INCOME', 'Passive');
@@ -73,14 +74,17 @@ async function main() {
   start.setDate(start.getDate() - 430);
   const opening = new Date(start);
   opening.setDate(3);
-  await tx(opening, 'Opening balances', [
+  const openingSplits = [
     { accountId: bank.id, amount: 95000000n },
     { accountId: cash.id, amount: 1200000n },
     { accountId: ppfcf.id, amount: 55000000n },
     { accountId: nifty.id, amount: 30000000n },
     { accountId: homeLoan.id, amount: -220000000n },
     { accountId: carLoan.id, amount: -62000000n },
-  ]);
+  ];
+  // Double entry: whatever the assets and loans do not explain is the owner's opening capital.
+  const openingDrift = openingSplits.reduce((sum, split) => sum + split.amount, 0n);
+  await tx(opening, 'Opening balances', [...openingSplits, { accountId: openingEquity.id, amount: -openingDrift }]);
 
   const monthsBack = 14;
   for (let m = monthsBack; m >= 0; m--) {
@@ -157,6 +161,29 @@ async function main() {
     });
   }
   await prisma.netWorthSnapshot.createMany({ data: snapshots });
+
+  await prisma.automation.create({
+    data: {
+      userId: uid,
+      name: 'Pay yourself first',
+      description: 'Every Monday at 9am, moves a fixed amount into your second asset account.',
+      triggerType: 'SCHEDULE',
+      triggerConfig: { cron: '0 9 * * 1' },
+      variables: { amountPaise: 500000 },
+      script: `const asset = accounts.filter((a) => a.type === 'ASSET');
+const liquid = asset.filter((a) => ['Bank', 'Cash', 'Savings'].includes(a.subType));
+const pool = (liquid.length > 1 ? liquid : asset).slice().sort((a, b) => b.balancePaise - a.balancePaise);
+const from = pool.find((a) => a.name === vars.from) || pool[0];
+const to = pool.find((a) => a.name === vars.to) || pool[1];
+if (!from || !to || from.name === to.name) throw new Error('Add another asset account to move money into');
+const amount = Number(vars.amountPaise || 500000);
+post('Weekly savings transfer', [
+  { account: from.name, amount: -amount },
+  { account: to.name, amount }
+], { date: today() });
+log('Moved ' + (amount / 100).toFixed(2) + ' from ' + from.name + ' to ' + to.name);`,
+    },
+  });
 
   console.log('Seeded', EMAIL, '/', PASSWORD);
 }

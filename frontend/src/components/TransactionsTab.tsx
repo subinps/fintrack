@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useGetTransactions, useAddTransaction, useGetAccounts, useAddAccount, useEditTransaction, useDeleteTransaction, useRestoreTransaction, Transaction, useGetTransactionsInfinite } from '../hooks/useQueries';
-import { Plus, Download, ArrowRight, Trash2, PlusCircle, Edit, Loader2, Calendar as CalendarIcon, Search } from 'lucide-react';
+import { useGetTransactions, useAddTransaction, useGetAccounts, useAddAccount, useEditTransaction, useDeleteTransaction, useRestoreTransaction, Transaction, useGetTransactionsInfinite, useTransactionTags } from '../hooks/useQueries';
+import { Plus, Download, ArrowRight, Trash2, PlusCircle, Edit, Loader2, Calendar as CalendarIcon, Search, Repeat } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { Check, ChevronsUpDown, FileInput } from 'lucide-react';
 import { ImportTransactionDialog } from './ImportTransactionDialog';
+import { useCreateRuleFromTransaction } from '../hooks/useRecurring';
 import { format, isToday, isYesterday } from 'date-fns';
 
 const DEFAULT_CATEGORIES = {
@@ -184,6 +185,8 @@ export function TransactionsTab({
   const [minAmount, setMinAmount] = useState('');
   const [maxAmount, setMaxAmount] = useState('');
   const [transactionType, setTransactionType] = useState<string>('all');
+  const [filterTag, setFilterTag] = useState<string>('all');
+  const { data: availableTags } = useTransactionTags();
 
   useEffect(() => {
     if (initialFilterAccountId) {
@@ -266,11 +269,14 @@ export function TransactionsTab({
           else if (transactionType === 'transfer') matchesType = !hasIncome && !hasExpense;
         }
 
-        return matchesAccount && matchesDate && matchesSearch && matchesAmount && matchesType;
+        // 6. Tag Filter
+        const matchesTag = filterTag === 'all' || ((t as any).tags ?? []).includes(filterTag);
+
+        return matchesAccount && matchesDate && matchesSearch && matchesAmount && matchesType && matchesTag;
       });
     }
     return data;
-  }, [rawTransactions, isFiltered, filterAccountId, startDate, endDate, searchQuery, minAmount, maxAmount, transactionType]);
+  }, [rawTransactions, isFiltered, filterAccountId, startDate, endDate, searchQuery, minAmount, maxAmount, transactionType, filterTag]);
 
   const groupedTransactions = useMemo(() => {
     const groups: Record<string, Transaction[]> = {};
@@ -596,6 +602,36 @@ export function TransactionsTab({
     }
   };
 
+  const [recurringTx, setRecurringTx] = useState<Transaction | null>(null);
+  const [recurName, setRecurName] = useState('');
+  const [recurRrule, setRecurRrule] = useState('FREQ=MONTHLY;INTERVAL=1');
+  const [recurMode, setRecurMode] = useState<'AUTO_POST' | 'CONFIRM'>('CONFIRM');
+  const createRuleFromTx = useCreateRuleFromTransaction();
+
+  const openRecurring = (transaction: Transaction) => {
+    setRecurringTx(transaction);
+    setRecurName(transaction.description);
+    setRecurRrule('FREQ=MONTHLY;INTERVAL=1');
+    setRecurMode('CONFIRM');
+  };
+
+  const saveRecurring = async () => {
+    if (!recurringTx) return;
+    try {
+      await createRuleFromTx.mutateAsync({
+        transactionId: recurringTx.id,
+        name: recurName.trim() || recurringTx.description,
+        rrule: recurRrule,
+        mode: recurMode,
+      });
+      toast.success('Recurring rule created', { description: 'Find it under Recurring in the sidebar.' });
+      setRecurringTx(null);
+    } catch (error) {
+      const message = (error as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      toast.error(message ?? 'Could not create the rule');
+    }
+  };
+
   const addSplit = () => {
     setAdvancedSplits([...advancedSplits, { accountId: '', debit: '', credit: '', units: '' }]);
   };
@@ -689,6 +725,19 @@ export function TransactionsTab({
                 ))}
               </SelectContent>
             </Select>
+            <Select value={filterTag} onValueChange={setFilterTag}>
+              <SelectTrigger aria-label="Filter by tag">
+                <SelectValue placeholder="Filter by tag" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All tags</SelectItem>
+                {(availableTags ?? []).map((tag) => (
+                  <SelectItem key={tag.name} value={tag.name}>
+                    #{tag.name} ({tag.count})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={transactionType} onValueChange={setTransactionType}>
               <SelectTrigger>
                 <SelectValue placeholder="Type" />
@@ -746,6 +795,11 @@ export function TransactionsTab({
                               {s.account?.name}
                             </span>
                           ))}
+                          {((t as any).tags ?? []).slice(0, 3).map((tag: string) => (
+                            <span key={tag} className="rounded-sm bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] lowercase tracking-[0.02em] text-primary">
+                              #{tag}
+                            </span>
+                          ))}
                           {t.splits.length > 2 && <span className="self-center font-mono text-[10px]">+{t.splits.length - 2}</span>}
                         </div>
                       </div>
@@ -755,6 +809,9 @@ export function TransactionsTab({
                         {formatCurrency(totalAmount)}
                       </div>
                       <div className="flex gap-1 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+                        <Button size="icon-sm" variant="ghost" aria-label={`Make ${t.description} recurring`} onClick={() => openRecurring(t)}>
+                          <Repeat className="h-3.5 w-3.5" />
+                        </Button>
                         <Button size="icon-sm" variant="ghost" aria-label={`Edit ${t.description}`} onClick={() => handleEdit(t)}>
                           <Edit className="h-3.5 w-3.5" />
                         </Button>
@@ -1009,6 +1066,61 @@ export function TransactionsTab({
               </DialogFooter>
             </form>
           </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(recurringTx)} onOpenChange={(isOpen) => !isOpen && setRecurringTx(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Repeat className="h-4 w-4 text-primary" aria-hidden="true" />
+              Make recurring
+            </DialogTitle>
+            <DialogDescription>
+              Reuse this entry's accounts and amounts. You can fine-tune the schedule later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="recur-name">Rule name</Label>
+              <Input id="recur-name" value={recurName} onChange={(event) => setRecurName(event.target.value)} />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>How often</Label>
+                <Select value={recurRrule} onValueChange={setRecurRrule}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="FREQ=WEEKLY;INTERVAL=1">Every week</SelectItem>
+                    <SelectItem value="FREQ=WEEKLY;INTERVAL=2">Every 2 weeks</SelectItem>
+                    <SelectItem value="FREQ=MONTHLY;INTERVAL=1">Every month</SelectItem>
+                    <SelectItem value="FREQ=MONTHLY;INTERVAL=3">Every quarter</SelectItem>
+                    <SelectItem value="FREQ=YEARLY;INTERVAL=1">Every year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Posting</Label>
+                <Select value={recurMode} onValueChange={(value) => setRecurMode(value as 'AUTO_POST' | 'CONFIRM')}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CONFIRM">Ask me first</SelectItem>
+                    <SelectItem value="AUTO_POST">Post automatically</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRecurringTx(null)}>Cancel</Button>
+            <Button onClick={saveRecurring} disabled={createRuleFromTx.isPending}>
+              {createRuleFromTx.isPending ? 'Creating…' : 'Create rule'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

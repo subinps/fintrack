@@ -6,6 +6,9 @@ import { createNotification } from '../services/notifications';
 import { snapshotNetWorth } from '../services/networth';
 import { refreshMarketPrices } from './prices';
 import { snapshotAllUsers } from './networth';
+import { runRecurringSweep, sendRecurringReminders } from '../services/recurring';
+import { evaluateAllBudgetAlerts } from '../services/budgets';
+import { runAutomationSweep } from '../services/automation';
 
 export interface NetWorthJobData {
     userId?: string;
@@ -86,9 +89,48 @@ export async function startWorker(): Promise<void> {
         })
     );
 
+    await boss.work(
+        QUEUES.recurring,
+        { batchSize: 1, pollingIntervalSeconds: 5 },
+        runJob(QUEUES.recurring, async () => {
+            const sweep = await runRecurringSweep();
+            const reminders = await sendRecurringReminders();
+            logger.info({ ...sweep, reminders }, 'recurring sweep finished');
+        })
+    );
+
+    // Every 5 minutes: recurring rules are due-date driven, so a 5 minute sweep is enough.
+    await boss.schedule(QUEUES.recurring, '*/5 * * * *', {}, { tz: 'UTC' });
+    await boss.work(
+        QUEUES.budget,
+        { batchSize: 1, pollingIntervalSeconds: 5 },
+        runJob(QUEUES.budget, async () => {
+            const result = await evaluateAllBudgetAlerts();
+            logger.info(result, 'budget alert sweep finished');
+        })
+    );
+
+    // Daily at 00:15 UTC: catch periods that rolled over while nobody posted a transaction.
+    await boss.schedule(QUEUES.budget, '15 0 * * *', {}, { tz: 'UTC' });
+
+    await boss.work(
+        QUEUES.automation,
+        { batchSize: 1, pollingIntervalSeconds: 5 },
+        runJob(QUEUES.automation, async () => {
+            const sweep = await runAutomationSweep();
+            if (sweep.ran || sweep.failed) logger.info(sweep, 'automation sweep finished');
+        })
+    );
+
+    // Cron automations are minute-resolution, so the sweep ticks every minute.
+    await boss.schedule(QUEUES.automation, '* * * * *', {}, { tz: 'UTC' });
+
     // Nightly at 23:59 UTC, matching the schedule the old node-cron jobs used.
     await boss.schedule(QUEUES.prices, '59 23 * * *', {}, { tz: 'UTC' });
     await boss.schedule(QUEUES.networth, '59 23 * * *', {}, { tz: 'UTC' });
+
+    // Kick a sweep shortly after boot so a rule that came due while the worker was down posts promptly.
+    await boss.send(QUEUES.recurring, {}, { startAfter: 30 });
 
     onLedgerEvent((event) => {
         if (event.type === 'transaction.completed' || event.type === 'transaction.voided' || event.type === 'transaction.restored' || event.type === 'account.changed') {

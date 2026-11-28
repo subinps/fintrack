@@ -19,6 +19,7 @@ import {
 } from '../lib/finance';
 import { cn } from '@/lib/utils';
 import { ErrorState, SectionHeading, SkeletonBlock } from './overview/primitives';
+import { BudgetPulseCard } from './overview/BudgetPulseCard';
 import { HealthCompass, NetWorthHero, PageHeader, PulseGrid } from './overview/HeroAndPulse';
 import { CashflowChartCard, NetWorthTrendCard, SpendingDonutCard } from './overview/Charts';
 import { AccountsCard, ActivityCard, RecurringCard, SignalsCard } from './overview/Panels';
@@ -262,6 +263,7 @@ export function OverviewTab({ onNavigate }: OverviewTabProps) {
       </div>
 
       <PulseGrid cashflow={fullCashflow} savingsRate={savingsRate} savingsChange={savingsChange} />
+      <BudgetPulseCard onOpen={() => onNavigate?.('budgets')} />
       <div className="grid gap-4 lg:grid-cols-12">
         <div className="lg:col-span-7">
           <CashflowChartCard series={visibleCashflow} onOpenIncomeExpense={() => onNavigate?.('income-expense')} />

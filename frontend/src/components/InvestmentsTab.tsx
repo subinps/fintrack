@@ -14,6 +14,7 @@ import { useRefreshAllPrices, useCachedMarketData } from '../hooks/useMarketData
 import type { Account } from '../hooks/useQueries';
 
 import { LedgerViewDialog } from './LedgerViewDialog';
+import { PortfolioPanel } from './PortfolioPanel';
 
 export function InvestmentsTab() {
   const { data: investments, isLoading } = useGetInvestments();
@@ -360,6 +361,7 @@ export function InvestmentsTab() {
 
       {investments && investments.length > 0 ? (
         <div className="space-y-4">
+          <PortfolioPanel />
           {!selectedType ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {['stock', 'mutual-fund', 'crypto', 'bond', 'etf', 'other-investment'].map(type => {

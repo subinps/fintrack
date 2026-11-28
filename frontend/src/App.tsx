@@ -66,7 +66,7 @@ function AppContent() {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/api-docs" element={<ApiDocsPage />} />
-        <Route path="/" element={user ? <Dashboard /> : <LandingPage />} />
+        <Route path="/" element={user ? <Dashboard /> : <LoginPage />} />
       </Routes>
     </Suspense>
   );

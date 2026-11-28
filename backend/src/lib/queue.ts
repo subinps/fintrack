@@ -4,6 +4,9 @@ import { logger } from './logger';
 export const QUEUES = {
     networth: 'networth-snapshot',
     prices: 'prices-refresh',
+    recurring: 'recurring-runs',
+    budget: 'budget-checks',
+    automation: 'automation-sweep',
 } as const;
 
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];

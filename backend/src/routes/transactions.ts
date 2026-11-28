@@ -16,6 +16,7 @@ import {
     voidTransaction,
 } from '../services/ledger';
 import { serializeTransaction, serializeTransactions } from '../lib/serialize';
+import { sanitizeTags } from '../lib/validation';
 
 // File upload config with size limit (5MB max)
 const upload = multer({
@@ -73,9 +74,11 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
         const skip = cursor || !take ? undefined : (page - 1) * take;
 
         const status = parseStatusFilter(req.query.status);
+        const tagFilter = typeof req.query.tag === 'string' ? req.query.tag.trim().toLowerCase() : '';
         const where: Prisma.TransactionWhereInput = {
             userId: req.user?.id,
             status,
+            ...(tagFilter ? { tags: { has: tagFilter } } : {}),
         };
         if (cursor) {
             where.OR = [
@@ -111,6 +114,28 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
                 nextCursor: take && transactions.length === take ? encodeCursor(transactions[transactions.length - 1]) : null,
             }
         });
+    } catch (error) {
+        sendLedgerError(res, error, 'Server error');
+    }
+});
+
+// Distinct tags used by this user, most used first — powers the filter chips
+router.get('/tags', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+        const rows = await prisma.transaction.findMany({
+            where: { userId: req.user?.id },
+            select: { tags: true },
+            take: 5000,
+        });
+        const counts = new Map<string, number>();
+        for (const row of rows) {
+            for (const tag of row.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+        }
+        const tags = [...counts.entries()]
+            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+            .slice(0, 40)
+            .map(([name, count]) => ({ name, count }));
+        res.json({ data: tags });
     } catch (error) {
         sendLedgerError(res, error, 'Server error');
     }
@@ -171,7 +196,7 @@ router.get('/:id/history', authenticateToken, async (req: AuthRequest, res) => {
 // Create transaction with splits
 router.post('/', authenticateToken, async (req: AuthRequest, res) => {
     try {
-        const { description, date, splits, status } = req.body;
+        const { description, date, splits, status, tags } = req.body;
         if (!Array.isArray(splits) || splits.length < 2) {
             return res.status(400).json({ error: 'A transaction needs at least two splits' });
         }
@@ -181,6 +206,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
             description,
             date,
             lines: linesFromBody(splits),
+            tags: sanitizeTags(tags),
             status: status === 'DRAFT' ? 'DRAFT' : 'COMPLETED',
         });
 
@@ -193,7 +219,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
 // Update transaction
 router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
     try {
-        const { description, date, splits, status } = req.body;
+        const { description, date, splits, status, tags } = req.body;
         const lines = Array.isArray(splits) ? linesFromBody(splits) : undefined;
 
         const updated = await updateTransaction({
@@ -202,6 +228,7 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
             description,
             date,
             lines,
+            tags: tags === undefined ? undefined : sanitizeTags(tags),
             status: status === 'DRAFT' || status === 'COMPLETED' ? status : undefined,
         });
 
